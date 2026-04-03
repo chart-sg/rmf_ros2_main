@@ -107,6 +107,69 @@ rmf_traffic::agv::Graph parse_graph(
     }
   }
 
+  const YAML::Node zones_yaml = graph_config["zones"];
+  if (!zones_yaml)
+  {
+    std::cout << "Your navigation graph does not provide zone information. "
+              <<
+      "This may cause problems with behaviors around zones. Please consider "
+              <<
+      "regenerating your navigration graph with the latest version of "
+              << "rmf_building_map_tools (from the rmf_traffic_editor repo)."
+              << std::endl;
+  }
+  else
+  {
+    for (const auto& zone : zones_yaml)
+    {
+      const std::string& name = zone.first.as<std::string>();
+      const YAML::Node properties_yaml = zone.second;
+      std::string level = properties_yaml["level"].as<std::string>();
+      std::string type = properties_yaml["type"].as<std::string>();
+      double orientation = properties_yaml["orientation"].as<double>();
+
+      const YAML::Node& pos_yaml = properties_yaml["position"];
+      const Eigen::Vector2d location(
+        pos_yaml[0].as<double>(),
+        pos_yaml[1].as<double>());
+
+      const YAML::Node& dims_yaml = properties_yaml["dims"];
+      const Eigen::Vector2d dimensions(
+        dims_yaml[0].as<double>(), //depth
+        dims_yaml[1].as<double>()); //width
+
+      rmf_traffic::agv::Graph::ZoneProperties zone_props(
+        name,
+        level,
+        type,
+        location,
+        orientation,
+        dimensions);
+
+      const YAML::Node& internal_vertices = properties_yaml["internal_vertices"];
+      for (const auto& iv : internal_vertices)
+      {
+        auto& vertex = zone_props.add_internal_vertex(iv["name"].as<std::string>());
+        vertex.set_location(Eigen::Vector2d(iv["x"].as<double>(), iv["y"].as<double>()));
+        vertex.set_group_name(iv["group"].as<std::string>());
+        vertex.set_priority(iv["priority"].as<int>());
+      }
+
+      const YAML::Node& transition_lanes = properties_yaml["transition_lanes"];
+      for (const auto& tl : transition_lanes)
+      {
+        auto& lane = zone_props.add_transition_lane();
+        lane.link_internal_vertex(tl['internal_vertex'].as<std::string>());
+        lane.link_external_vertex(tl['external_vertex'].as<std::string>());
+        lane.set_entry_lane(tl['is_entry_lane'].as<bool>());
+        lane.set_exit_lane(tl['is_exit_lane'].as<bool>());
+      }
+
+      // set_known_zone takes by value and returns the shared_ptr
+      graph.set_known_zone(std::move(zone_props));
+    }
+  }
+
   const YAML::Node levels = graph_config["levels"];
   if (!levels)
   {
@@ -366,6 +429,11 @@ rmf_traffic::agv::Graph parse_graph(
           exit_event = Event::make(Lane::DoorClose(name, duration));
         }
       }
+      if (const YAML::Node zone_option = options["zone_name"])
+      {
+        // Insert Zone entry/exit events here
+      }
+
 
       if (const YAML::Node docking_option = options["dock_name"])
       {

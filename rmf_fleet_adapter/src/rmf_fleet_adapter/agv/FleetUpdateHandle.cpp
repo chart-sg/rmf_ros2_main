@@ -1453,6 +1453,8 @@ public:
   void execute(const LiftMove&) override {}
   void execute(const Wait&) override {}
   void execute(const Dock& dock) override {}
+  void execute(const ZoneEntry&) override {}
+  void execute(const ZoneExit&) override {}
   void execute(const LiftSessionBegin& info) override
   {
     lift = info.lift_name();

@@ -340,6 +340,9 @@ public:
     // Do nothing
   }
 
+  void execute(const ZoneEntry&) final {}
+  void execute(const ZoneExit&) final {}
+
   bool moving_lift() const
   {
     return _moving_lift;
@@ -610,6 +613,8 @@ public:
   void execute(const Wait&) final {}
   void execute(const DoorOpen&) final {}
   void execute(const DoorClose&) final {}
+  void execute(const ZoneEntry&) final {}
+  void execute(const ZoneExit&) final {}
   void execute(const LiftSessionBegin& e) final
   {
     // If we're going to re-begin using a lift, then we don't need to keep this
@@ -659,6 +664,8 @@ public:
     if (close.name() == current_name)
       still_using = true;
   }
+  void execute(const ZoneEntry&) final {}
+  void execute(const ZoneExit&) final {}
   void execute(const LiftSessionBegin& e) final {}
   void execute(const LiftMove& e) final {}
   void execute(const LiftDoorOpen& e) final {}

@@ -181,6 +181,17 @@ public:
     text = "Wait";
   }
 
+  void execute(const ZoneEntry& zone) override
+  {
+    text = "Zone " + zone.zone_name();
+  }
+
+  void execute(const ZoneExit& zone) override
+  {
+    text = "Zone " + zone.zone_name();
+  }
+
+
   void execute(const Dock& dock) override
   {
     text = "Dock " + dock.dock_name();

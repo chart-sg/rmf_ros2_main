@@ -159,10 +159,10 @@ rmf_traffic::agv::Graph parse_graph(
       for (const auto& tl : transition_lanes)
       {
         auto& lane = zone_props.add_transition_lane();
-        lane.link_internal_vertex(tl['internal_vertex'].as<std::string>());
-        lane.link_external_vertex(tl['external_vertex'].as<std::string>());
-        lane.set_entry_lane(tl['is_entry_lane'].as<bool>());
-        lane.set_exit_lane(tl['is_exit_lane'].as<bool>());
+        lane.link_internal_vertex(tl["internal_vertex"].as<std::string>());
+        lane.link_external_vertex(tl["external_vertex"].as<std::string>());
+        lane.set_entry_lane(tl["is_entry_lane"].as<bool>());
+        lane.set_exit_lane(tl["is_exit_lane"].as<bool>());
       }
 
       // set_known_zone takes by value and returns the shared_ptr

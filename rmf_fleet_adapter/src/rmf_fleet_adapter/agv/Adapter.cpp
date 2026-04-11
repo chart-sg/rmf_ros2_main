@@ -344,6 +344,15 @@ std::shared_ptr<EasyFullControl> Adapter::add_easy_fleet(
         config.fleet_name().c_str());
     }
 
+    if (task == "zone" && consider)
+    {
+      fleet_handle->consider_zone_requests(consider);
+      RCLCPP_INFO(
+        this->node()->get_logger(),
+        "Fleet [%s] is configured to perform zone tasks",
+        config.fleet_name().c_str());
+    }
+
     if (task == "clean" && consider)
     {
       fleet_handle->consider_cleaning_requests(consider);

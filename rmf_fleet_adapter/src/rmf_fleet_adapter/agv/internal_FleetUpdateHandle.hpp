@@ -95,8 +95,25 @@ using DeserializedPlace =
   DeserializedDescription<std::optional<rmf_traffic::agv::Plan::Goal>>;
 
 //==============================================================================
+using DeserializedZone =
+  DeserializedDescription<std::optional<std::string>>;
+
+//==============================================================================
+using DeserializedZoneWaypoint =
+  DeserializedDescription<std::optional<std::string>>;
+
+//==============================================================================
 using PlaceDeserializer =
   std::function<DeserializedPlace(const nlohmann::json&)>;
+
+//==============================================================================
+using ZoneDeserializer =
+  std::function<DeserializedZone(const nlohmann::json&)>;
+
+//==============================================================================
+using ZoneWaypointDeserializer =
+  std::function<DeserializedZoneWaypoint(
+    const std::string& zone_name, const nlohmann::json&)>;
 
 //==============================================================================
 struct TaskDeserialization
@@ -105,12 +122,15 @@ struct TaskDeserialization
   DeserializeJSONPtr<DeserializedPhase> phase;
   DeserializeJSONPtr<DeserializedEvent> event;
   PlaceDeserializer place;
+  ZoneDeserializer zone;
+  ZoneWaypointDeserializer zone_waypoint;
 
   std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_pickup;
   std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_dropoff;
   std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_clean;
   std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_patrol;
   std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_composed;
+  std::shared_ptr<FleetUpdateHandle::ConsiderRequest> consider_zone;
   // Map category string to its ConsiderRequest for PerformAction events
   std::shared_ptr<std::unordered_map<
       std::string, FleetUpdateHandle::ConsiderRequest>> consider_actions;

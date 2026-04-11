@@ -1018,6 +1018,49 @@ public:
 
   bool debug_positions = false;
 
+  /// Mirrors rmf_task_sequence::events::GoToZone::Description::Modifiers.
+  /// Duplicated here so RobotContext.hpp doesn't pull in a concrete event
+  /// header.
+  struct ZoneTaskModifiers
+  {
+    std::string group_hint;
+    std::optional<double> orientation_hint;
+    std::vector<std::string> preferred_waypoints;
+  };
+
+  /// Set the modifiers for a zone task.
+  void set_zone_task_modifiers(ZoneTaskModifiers modifiers);
+  const ZoneTaskModifiers& zone_task_modifiers() const;
+
+  /// Set whether this robot is currently doing a zone task.
+  void set_is_zone_task(bool value);
+
+  /// Check whether this robot is currently doing a zone task.
+  bool is_zone_task() const;
+
+  /// Goal assigned by the zone supervisor,
+  /// not cleared until ZoneExit confirms release.
+  void set_zone_supervisor_goal(rmf_traffic::agv::Plan::Goal goal);
+
+  /// Get the current goal assigned by the zone supervisor
+  std::optional<rmf_traffic::agv::Plan::Goal> zone_supervisor_goal() const;
+
+  /// Clear the goal assigned by the zone supervisor.
+  void clear_zone_supervisor_goal();
+
+  /// Waypoint name this robot is booked at. Non-empty means an active
+  /// zone booking exists. Also controls stubbornness.
+  void set_zone_assigned_waypoint(std::string name);
+
+  /// Get the waypoint name this robot is booked at.
+  const std::string& zone_assigned_waypoint() const;
+
+  /// Clear the waypoint name this robot is booked at.
+  void clear_zone_assigned_waypoint();
+
+  /// First waypoint from the current location() start set, or nullopt.
+  std::optional<std::size_t> current_waypoint() const;
+
 private:
 
   RobotContext(
@@ -1091,6 +1134,12 @@ private:
   std::shared_ptr<const rmf_task::TaskPlanner> _task_planner;
   std::weak_ptr<TaskManager> _task_manager;
   bool _robot_finishing_request = false;
+
+  ZoneTaskModifiers _zone_task_modifiers;
+  bool _is_zone_task = false;
+  std::string _zone_assigned_waypoint;
+  std::shared_ptr<void> _zone_stubbornness;
+  std::optional<rmf_traffic::agv::Plan::Goal> _zone_supervisor_goal;
 
   RobotUpdateHandle::Unstable::Watchdog _lift_watchdog;
   rmf_traffic::Duration _lift_rewait_duration = std::chrono::seconds(0);

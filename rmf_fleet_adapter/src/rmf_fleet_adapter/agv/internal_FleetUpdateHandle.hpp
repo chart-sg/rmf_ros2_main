@@ -38,6 +38,7 @@
 #include <rmf_fleet_msgs/msg/lane_states.hpp>
 #include <rmf_fleet_msgs/msg/charging_assignments.hpp>
 #include <rmf_fleet_msgs/msg/emergency_signal.hpp>
+#include <rmf_zone_msgs/msg/zone_booking_revoked.hpp>
 #include <std_msgs/msg/bool.hpp>
 
 #include <rmf_fleet_adapter/agv/FleetUpdateHandle.hpp>
@@ -312,6 +313,9 @@ public:
 
   rclcpp::Subscription<rmf_fleet_msgs::msg::ChargingAssignments>::SharedPtr
     charging_assignments_sub = nullptr;
+
+  rclcpp::Subscription<rmf_zone_msgs::msg::ZoneBookingRevoked>::SharedPtr
+    zone_booking_revoked_sub = nullptr;
   using ChargingAssignments = rmf_fleet_msgs::msg::ChargingAssignments;
   using ChargingAssignment = rmf_fleet_msgs::msg::ChargingAssignment;
   // Keep track of charging assignments for robots that have not been registered
@@ -635,6 +639,38 @@ public:
       {
         if (const auto self = w.lock())
           self->_pimpl->update_charging_assignments(assignments);
+      });
+
+    handle->_pimpl->zone_booking_revoked_sub =
+      handle->_pimpl->node->create_subscription<
+      rmf_zone_msgs::msg::ZoneBookingRevoked>(
+      ZoneBookingRevokedTopicName, 10,
+      [w = handle->weak_from_this()](
+        const rmf_zone_msgs::msg::ZoneBookingRevoked::SharedPtr msg)
+      {
+        const auto self = w.lock();
+        if (!self)
+          return;
+
+        for (const auto& [context, _] : self->_pimpl->task_managers)
+        {
+          if (context->name() != msg->robot_name
+            || context->group() != msg->fleet_name)
+            continue;
+
+          RCLCPP_WARN(context->node()->get_logger(),
+            "Zone booking revoked for [%s] at waypoint [%s] in zone [%s]: %s",
+            msg->robot_name.c_str(),
+            msg->assigned_waypoint_name.c_str(),
+            msg->zone_name.c_str(),
+            msg->reason.c_str());
+
+          context->clear_zone_supervisor_goal();
+          context->clear_zone_assigned_waypoint();
+          context->set_zone_task_modifiers({});
+          context->set_is_zone_task(false);
+          return;
+        }
       });
 
     handle->_pimpl->deserialization.event->add(

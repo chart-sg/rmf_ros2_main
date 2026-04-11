@@ -431,9 +431,85 @@ rmf_traffic::agv::Graph parse_graph(
       }
       if (const YAML::Node zone_option = options["zone_name"])
       {
-        // Insert Zone entry/exit events here
-      }
+        // Zone + lift on the same lane is not supported for now
+        // (lift cabin zone feature will be added in the future)
+        if (is_lift)
+        {
+          throw std::runtime_error(
+            "Lane [" + std::to_string(begin) + " -> " + std::to_string(end)
+            + "] has both a zone_name and a lift event. "
+            "Zone transition lanes inside lifts are not supported for now.");
+        }
 
+        const std::string zone_label = zone_option.as<std::string>();
+        const rmf_traffic::Duration duration = std::chrono::seconds(4);
+
+        const std::string entry_suffix = "_entry";
+        const std::string exit_suffix = "_exit";
+
+        if (zone_label.size() > entry_suffix.size()
+          && zone_label.compare(
+            zone_label.size() - entry_suffix.size(),
+            entry_suffix.size(), entry_suffix) == 0)
+        {
+          const std::string zone_name =
+            zone_label.substr(0, zone_label.size() - entry_suffix.size());
+
+          if (entry_event)
+          {
+            // Door event already on this lane, split so door opens first
+            const auto entry_wp = graph.get_waypoint(begin);
+            auto& split_wp =
+              graph.add_waypoint(map_name, entry_wp.get_location());
+            split_wp.set_in_mutex_group(entry_wp.in_mutex_group());
+            split_wp.set_merge_radius(0.0);
+
+            graph.add_lane(
+              {begin, entry_event},
+              {split_wp.index(), rmf_utils::clone_ptr<Event>()});
+            stacked_vertex.insert({begin, split_wp.index()});
+
+            begin = split_wp.index();
+            vnum_temp++;
+          }
+
+          entry_event = Event::make(Lane::ZoneEntry(zone_name, duration));
+        }
+        else if (zone_label.size() > exit_suffix.size()
+          && zone_label.compare(
+            zone_label.size() - exit_suffix.size(),
+            exit_suffix.size(), exit_suffix) == 0)
+        {
+          const std::string zone_name =
+            zone_label.substr(0, zone_label.size() - exit_suffix.size());
+
+          if (exit_event)
+          {
+            // Door event already on this lane, split so zone exit fires first
+            const auto exit_wp = graph.get_waypoint(end);
+            auto& split_wp =
+              graph.add_waypoint(map_name, exit_wp.get_location());
+            split_wp.set_in_mutex_group(exit_wp.in_mutex_group());
+            split_wp.set_merge_radius(0.0);
+
+            graph.add_lane(
+              {split_wp.index(), rmf_utils::clone_ptr<Event>()},
+              {end, exit_event});
+
+            end = split_wp.index();
+            vnum_temp++;
+          }
+
+          exit_event = Event::make(Lane::ZoneExit(zone_name, duration));
+        }
+        else
+        {
+          throw std::runtime_error(
+            "Unrecognized zone_name label [" + zone_label + "] on lane ["
+            + std::to_string(begin) + " -> " + std::to_string(end)
+            + "]. Expected format: {zone_name}_entry or {zone_name}_exit");
+        }
+      }
 
       if (const YAML::Node docking_option = options["dock_name"])
       {

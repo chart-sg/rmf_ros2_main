@@ -35,6 +35,7 @@
 #include "../tasks/Compose.hpp"
 #include "../tasks/Zone.hpp"
 #include "../events/GoToPlace.hpp"
+#include "../events/GoToZone.hpp"
 #include "../events/ResponsiveWait.hpp"
 #include "../events/PerformAction.hpp"
 #include "../events/DynamicEvent.hpp"
@@ -1809,6 +1810,7 @@ void FleetUpdateHandle::Implementation::add_standard_tasks()
     *activation.phase, activation.event);
 
   events::GoToPlace::add(*activation.event);
+  events::GoToZone::add(*activation.event);
   events::PerformAction::add(*activation.event);
   deserialization.place = make_place_deserializer(planner);
   deserialization.zone = make_zone_deserializer(planner);

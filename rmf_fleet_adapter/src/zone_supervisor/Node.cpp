@@ -126,12 +126,21 @@ void Node::_on_nav_graphs(
         "Zone [%s] already registered; updating from fleet [%s].",
         zone.name.c_str(), fleet_name.c_str());
     }
+    // assuming that zone names are unique across fleets,
+    // later insert will overwrite earlier one if there are duplicates
     _zones[zone.name] = std::move(info);
   }
 
+  std::string zone_list;
+  for (const auto& zone : msg->zones)
+  {
+    if (!zone_list.empty())
+      zone_list += ", ";
+    zone_list += zone.name;
+  }
   RCLCPP_INFO(this->get_logger(),
-    "Registered %zu zones from fleet [%s] (total known zones: %zu).",
-    msg->zones.size(), fleet_name.c_str(), _zones.size());
+    "Registered %zu zones from fleet [%s] nav_graph, the zones are: [%s]",
+    msg->zones.size(), fleet_name.c_str(), zone_list.c_str());
 
   if (!_ready)
   {
@@ -276,16 +285,16 @@ Node::SelectionResult Node::_select_waypoint(
   if (zone_it == _zones.end())
     return {false, {}, "unknown_zone"};
 
-  // Copy the waypoint list (already sorted by priority ascending)
+  // 1. Copy the waypoint list (already sorted by priority ascending)
   auto candidates = zone_it->second.waypoints;
 
-  // Zone_log filtering: Filter out already-booked waypoints.
+  // 2. Zone_log filtering: Filter out already-booked waypoints.
   candidates.erase(
     std::remove_if(candidates.begin(), candidates.end(),
       [this](const auto& wp) { return _zone_log.count(wp.name) > 0; }),
     candidates.end());
 
-  // Group filtering: apply group_hint if provided.
+  // 3. Group filtering: apply group_hint if provided.
   if (!modifiers.group_hint.empty())
   {
     auto group_filtered = candidates;
@@ -300,7 +309,7 @@ Node::SelectionResult Node::_select_waypoint(
     // No match for group filter, fall back to all candidates
   }
 
-  // Preferred waypoints filtering:
+  // 4. Preferred waypoints filtering:
   // if specified, return the first available
   // match from the preference list.
   if (!modifiers.preferred_waypoints.empty())
@@ -315,7 +324,7 @@ Node::SelectionResult Node::_select_waypoint(
     }
   }
 
-  // Priority selection: Select highest priority (first in sorted list).
+  // 5. Priority selection: Select highest priority (first in sorted list).
   if (candidates.empty())
     return {false, {}, "waypoint_unavailable"};
 
@@ -362,6 +371,9 @@ void Node::_on_stale_booking_check()
 
   for (auto& [wp_name, entry] : _zone_log)
   {
+    // robot name not found, or fleet name not found in the fleet state cache,
+    // but we had previously seen this robot arrive at the zone waypoint,
+    // so mark as suspect.
     auto fleet_it = _robot_positions.find(entry.fleet_name);
     if (fleet_it == _robot_positions.end())
     {
@@ -399,6 +411,8 @@ void Node::_on_stale_booking_check()
 
     if (!found)
     {
+      // Waypoint not found in zone definition. This shouldn't happen,
+      // but if it does, mark as suspect.
       if (entry.has_arrived)
         _mark_suspect(wp_name);
       continue;
@@ -417,7 +431,7 @@ void Node::_on_stale_booking_check()
       // Was here, now gone
       _mark_suspect(wp_name);
     }
-    // else: still en route, skip
+    // else: don't mark it stale yet, it hasn't had its chance to arrive
 
     if (entry.has_arrived)
     {

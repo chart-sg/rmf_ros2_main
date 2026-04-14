@@ -79,7 +79,8 @@ private:
     bool has_arrived = false;
   };
 
-  // Keyed by assigned waypoint name.
+  // Keyed by assigned waypoint name (presume zone waypoint name are
+  // unique across fleets).
   std::unordered_map<std::string, ZoneLogEntry> _zone_log;
 
   // Callback groups

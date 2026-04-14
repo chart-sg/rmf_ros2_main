@@ -237,15 +237,18 @@ auto GoToZone::Standby::begin(
     rmf_task_sequence::events::GoToPlace::Description::make_for_one_of(
       std::move(goals));
 
-  // Clear task-level zone flags on completion/cancel/kill. All three paths
-  // invoke _finished() promptly, so inline cleanup here is sufficient.
-  // zone_assigned_waypoint and zone_supervisor_goal are owned by
-  // ZoneExit/ZoneBookingRevoked and not touched here.
+  // On task completion/cancel/kill, reset task-level zone state:
+  // - is_zone_task and zone_task_modifiers: no longer applicable.
+  // - zone_supervisor_goal: reset for new tasks
+  // zone_assigned_waypoint is intentionally NOT cleared here: it gates
+  // stubbornness and is cleared by ZoneExit / ZoneBookingRevoked so the
+  // robot stays stubborn until it properly leaves the zone.
   auto wrapped_finished =
     [context = _context, finished = std::move(finished)]()
     {
       context->set_is_zone_task(false);
       context->set_zone_task_modifiers({});
+      context->clear_zone_supervisor_goal();
       finished();
     };
 

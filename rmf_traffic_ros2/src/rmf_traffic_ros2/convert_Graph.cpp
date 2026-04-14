@@ -1015,7 +1015,7 @@ std::unique_ptr<rmf_building_map_msgs::msg::Graph> convert(
 
     zones.emplace_back(rmf_building_map_msgs::build<GraphZoneMsg>()
       .name(zone_ptr->name())
-      .level(zone_ptr->level())
+      .level(zone_ptr->map())
       .type(zone_ptr->type())
       .transition_lanes(std::move(zone_transition_lanes))
       .center_x(zone_ptr->location().x())

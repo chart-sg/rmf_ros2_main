@@ -152,7 +152,7 @@ rmf_traffic::agv::Graph parse_graph(
         auto& vertex = zone_props.add_internal_vertex(iv["name"].as<std::string>());
         vertex.set_location(Eigen::Vector2d(iv["x"].as<double>(), iv["y"].as<double>()));
         vertex.set_group_name(iv["group"].as<std::string>());
-        vertex.set_priority(iv["priority"].as<int>());
+        vertex.set_priority(iv["priority"].as<std::size_t>());
       }
 
       const YAML::Node& transition_lanes = properties_yaml["transition_lanes"];

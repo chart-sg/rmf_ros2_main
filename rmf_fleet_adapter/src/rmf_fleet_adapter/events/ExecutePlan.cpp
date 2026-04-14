@@ -354,7 +354,7 @@ public:
       const auto zone_props = graph.find_known_zone(
         zone_entry.zone_name());
       // To check if the assigned waypoint belongs to the this target zone
-      if (zone_props && zone_props->get_internal_vertex(
+      if (zone_props && zone_props->find_internal_vertex(
           _context->zone_assigned_waypoint()))
         return;
     }
@@ -388,7 +388,7 @@ public:
     const auto& graph = _context->navigation_graph();
     const auto zone_props = graph.find_known_zone(
       zone_exit.zone_name());
-    if (!zone_props || !zone_props->get_internal_vertex(
+    if (!zone_props || !zone_props->find_internal_vertex(
         _context->zone_assigned_waypoint()))
       return;
 

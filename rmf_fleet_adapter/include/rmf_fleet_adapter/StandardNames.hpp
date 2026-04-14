@@ -87,7 +87,7 @@ const std::string ReservationAllocationTopicName =
 const std::string ReservationReleaseTopicName = "rmf/reservations/release";
 
 const std::string ZoneRequestTopicName = "zone_requests";
-const std::string ZoneStateTopicName = "zone_supervisor/state";
+const std::string ZoneStateTopicName = "zone_states";
 const std::string ZoneManualReleaseTopicName = "zone_manual_release";
 const std::string ZoneBookingRevokedTopicName = "zone_booking_revoked";
 

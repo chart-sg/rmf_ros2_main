@@ -101,15 +101,6 @@ void Node::_on_nav_graphs(
 {
   const std::string fleet_name = msg->name;
 
-  // Clear zones from a previous graph publish by this fleet
-  auto prev_it = _fleet_zone_names.find(fleet_name);
-  if (prev_it != _fleet_zone_names.end())
-  {
-    for (const auto& old_zone : prev_it->second)
-      _zones.erase(old_zone);
-    prev_it->second.clear();
-  }
-
   for (const auto& zone : msg->zones)
   {
     ZoneInfo info;
@@ -129,21 +120,18 @@ void Node::_on_nav_graphs(
     std::sort(info.waypoints.begin(), info.waypoints.end(),
       [](const auto& a, const auto& b) { return a.priority < b.priority; });
 
+    if (_zones.find(zone.name) != _zones.end())
+    {
+      RCLCPP_DEBUG(this->get_logger(),
+        "Zone [%s] already registered; updating from fleet [%s].",
+        zone.name.c_str(), fleet_name.c_str());
+    }
     _zones[zone.name] = std::move(info);
-    _fleet_zone_names[fleet_name].insert(zone.name);
   }
 
-  const auto& fleet_zones = _fleet_zone_names[fleet_name];
-  std::string zone_list;
-  for (const auto& zn : fleet_zones)
-  {
-    if (!zone_list.empty())
-      zone_list += ", ";
-    zone_list += zn;
-  }
   RCLCPP_INFO(this->get_logger(),
-    "Registered %zu zones from fleet [%s]: [%s]",
-    fleet_zones.size(), fleet_name.c_str(), zone_list.c_str());
+    "Registered %zu zones from fleet [%s] (total known zones: %zu).",
+    msg->zones.size(), fleet_name.c_str(), _zones.size());
 
   if (!_ready)
   {

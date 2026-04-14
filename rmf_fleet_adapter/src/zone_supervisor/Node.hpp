@@ -122,10 +122,6 @@ private:
   bool _ready = false;
   std::vector<rmf_zone_msgs::msg::ZoneRequest::SharedPtr> _pending_requests;
 
-  // fleet_name -> zone names from that fleet's graph
-  std::unordered_map<std::string,
-    std::unordered_set<std::string>> _fleet_zone_names;
-
   // wp_name -> time first suspected stale. Revoked after grace period.
   std::unordered_map<std::string, rclcpp::Time> _suspect_bookings;
 

@@ -429,7 +429,7 @@ rmf_traffic::agv::Graph parse_graph(
           exit_event = Event::make(Lane::DoorClose(name, duration));
         }
       }
-      if (const YAML::Node zone_option = options["zone_name"])
+      if (const YAML::Node zone_option = options["zone"])
       {
         // Zone + lift on the same lane is not supported for now
         // (lift cabin zone feature will be added in the future)
@@ -437,24 +437,26 @@ rmf_traffic::agv::Graph parse_graph(
         {
           throw std::runtime_error(
             "Lane [" + std::to_string(begin) + " -> " + std::to_string(end)
-            + "] has both a zone_name and a lift event. "
+            + "] has both a zone and a lift event. "
             "Zone transition lanes inside lifts are not supported for now.");
         }
 
-        const std::string zone_label = zone_option.as<std::string>();
+        const auto name_node = zone_option["name"];
+        const auto transition_node = zone_option["transition_type"];
+        if (!name_node || !transition_node)
+        {
+          throw std::runtime_error(
+            "Zone option on lane [" + std::to_string(begin) + " -> "
+            + std::to_string(end)
+            + "] must contain both name and transition_type.");
+        }
+
+        const std::string zone_name = name_node.as<std::string>();
+        const std::string transition = transition_node.as<std::string>();
         const rmf_traffic::Duration duration = std::chrono::seconds(4);
 
-        const std::string entry_suffix = "_entry";
-        const std::string exit_suffix = "_exit";
-
-        if (zone_label.size() > entry_suffix.size()
-          && zone_label.compare(
-            zone_label.size() - entry_suffix.size(),
-            entry_suffix.size(), entry_suffix) == 0)
+        if (transition == "entry")
         {
-          const std::string zone_name =
-            zone_label.substr(0, zone_label.size() - entry_suffix.size());
-
           if (entry_event)
           {
             // Door event already on this lane, split so door opens first
@@ -475,14 +477,8 @@ rmf_traffic::agv::Graph parse_graph(
 
           entry_event = Event::make(Lane::ZoneEntry(zone_name, duration));
         }
-        else if (zone_label.size() > exit_suffix.size()
-          && zone_label.compare(
-            zone_label.size() - exit_suffix.size(),
-            exit_suffix.size(), exit_suffix) == 0)
+        else if (transition == "exit")
         {
-          const std::string zone_name =
-            zone_label.substr(0, zone_label.size() - exit_suffix.size());
-
           if (exit_event)
           {
             // Door event already on this lane, split so zone exit fires first
@@ -505,9 +501,9 @@ rmf_traffic::agv::Graph parse_graph(
         else
         {
           throw std::runtime_error(
-            "Unrecognized zone_name label [" + zone_label + "] on lane ["
-            + std::to_string(begin) + " -> " + std::to_string(end)
-            + "]. Expected format: {zone_name}_entry or {zone_name}_exit");
+            "Unrecognized zone transition_type [" + transition
+            + "] on lane [" + std::to_string(begin) + " -> "
+            + std::to_string(end) + "]. Expected 'entry' or 'exit'.");
         }
       }
 

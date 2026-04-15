@@ -254,28 +254,24 @@ void Node::_process_entry(
 void Node::_process_exit(
   const rmf_zone_msgs::msg::ZoneRequest::SharedPtr msg)
 {
-  for (auto it = _zone_log.begin(); it != _zone_log.end(); ++it)
+  auto it = _find_booking_for(
+    msg->robot_name, msg->fleet_name, msg->zone_name);
+  if (it == _zone_log.end())
   {
-    if (it->second.robot_name == msg->robot_name
-      && it->second.fleet_name == msg->fleet_name
-      && it->second.zone_name == msg->zone_name)
-    {
-      RCLCPP_INFO(this->get_logger(),
-        "Released booking at [%s] in zone [%s] for robot [%s]",
-        it->first.c_str(), msg->zone_name.c_str(),
-        msg->robot_name.c_str());
-
-      _suspect_bookings.erase(it->first);
-      _erase_booking(it);
-      _erase_robot_position(msg->fleet_name, msg->robot_name);
-      _publish_state();
-      return;
-    }
+    RCLCPP_WARN(this->get_logger(),
+      "ZoneRequest EXIT: no booking found for robot [%s] in zone [%s]",
+      msg->robot_name.c_str(), msg->zone_name.c_str());
+    return;
   }
 
-  RCLCPP_WARN(this->get_logger(),
-    "ZoneRequest EXIT: no booking found for robot [%s] in zone [%s]",
-    msg->robot_name.c_str(), msg->zone_name.c_str());
+  RCLCPP_INFO(this->get_logger(),
+    "Released booking at [%s] in zone [%s] for robot [%s]",
+    it->first.c_str(), msg->zone_name.c_str(), msg->robot_name.c_str());
+
+  _suspect_bookings.erase(it->first);
+  _erase_booking(it);
+  _erase_robot_position(msg->fleet_name, msg->robot_name);
+  _publish_state();
 }
 
 //==============================================================================
@@ -538,26 +534,22 @@ void Node::_remove_booking_for_robot(
   const std::string& zone_name,
   const std::string& reason)
 {
-  for (auto it = _zone_log.begin(); it != _zone_log.end(); ++it)
+  auto it = _find_booking_for(robot_name, fleet_name, zone_name);
+  if (it == _zone_log.end())
   {
-    if (it->second.robot_name == robot_name
-      && it->second.fleet_name == fleet_name
-      && it->second.zone_name == zone_name)
-    {
-      const std::string wp_name = it->first;
-      RCLCPP_INFO(this->get_logger(),
-        "Removing booking for robot [%s] at waypoint [%s] in zone [%s] "
-        "(reason: %s)",
-        robot_name.c_str(), wp_name.c_str(), zone_name.c_str(),
-        reason.c_str());
-      _remove_booking(wp_name, reason);
-      return;
-    }
+    RCLCPP_WARN(this->get_logger(),
+      "No booking found for robot [%s] (fleet [%s]) in zone [%s] during %s",
+      robot_name.c_str(), fleet_name.c_str(), zone_name.c_str(),
+      reason.c_str());
+    return;
   }
 
-  RCLCPP_WARN(this->get_logger(),
-    "No booking found for robot [%s] (fleet [%s]) in zone [%s] during %s",
-    robot_name.c_str(), fleet_name.c_str(), zone_name.c_str(), reason.c_str());
+  const std::string wp_name = it->first;
+  RCLCPP_INFO(this->get_logger(),
+    "Removing booking for robot [%s] at waypoint [%s] in zone [%s] "
+    "(reason: %s)",
+    robot_name.c_str(), wp_name.c_str(), zone_name.c_str(), reason.c_str());
+  _remove_booking(wp_name, reason);
 }
 
 //==============================================================================
@@ -582,6 +574,25 @@ void Node::_erase_robot_position(
   fleet_it->second.erase(robot_name);
   if (fleet_it->second.empty())
     _robot_positions.erase(fleet_it);
+}
+
+//==============================================================================
+std::unordered_map<std::string, Node::ZoneLogEntry>::iterator
+Node::_find_booking_for(
+  const std::string& robot_name,
+  const std::string& fleet_name,
+  const std::string& zone_name)
+{
+  for (auto it = _zone_log.begin(); it != _zone_log.end(); ++it)
+  {
+    if (it->second.robot_name == robot_name
+      && it->second.fleet_name == fleet_name
+      && it->second.zone_name == zone_name)
+    {
+      return it;
+    }
+  }
+  return _zone_log.end();
 }
 
 //==============================================================================

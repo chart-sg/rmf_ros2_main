@@ -176,6 +176,13 @@ private:
   void _erase_booking(
     std::unordered_map<std::string, ZoneLogEntry>::iterator it);
 
+  // Finds an active booking
+  std::unordered_map<std::string, ZoneLogEntry>::iterator
+  _find_booking_for(
+    const std::string& robot_name,
+    const std::string& fleet_name,
+    const std::string& zone_name);
+
   struct SelectionResult
   {
     bool success;

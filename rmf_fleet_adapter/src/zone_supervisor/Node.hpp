@@ -59,7 +59,8 @@ private:
   struct ZoneInfo
   {
     std::vector<ZoneWaypointInfo> waypoints;  // sorted by priority ascending
-    // will extend in the future to include more info about the zone
+    std::unordered_map<std::string, std::pair<float, float>>
+      waypoint_positions; // wp_name -> (x, y)
   };
 
   std::unordered_map<std::string, ZoneInfo> _zones;

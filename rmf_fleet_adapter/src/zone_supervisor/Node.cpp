@@ -114,6 +114,7 @@ void Node::_on_nav_graphs(
       wp_info.priority = vtx.priority;
       wp_info.group = vtx.group;
       info.waypoints.push_back(std::move(wp_info));
+      info.waypoint_positions[vtx.name] = {vtx.x, vtx.y};
     }
 
     std::sort(info.waypoints.begin(), info.waypoints.end(),
@@ -401,15 +402,12 @@ void Node::_on_stale_booking_check()
     auto zone_it = _zones.find(entry.zone_name);
     if (zone_it != _zones.end())
     {
-      for (const auto& wp : zone_it->second.waypoints)
+      auto pos_it = zone_it->second.waypoint_positions.find(wp_name);
+      if (pos_it != zone_it->second.waypoint_positions.end())
       {
-        if (wp.name == wp_name)
-        {
-          wp_x = wp.x;
-          wp_y = wp.y;
-          found = true;
-          break;
-        }
+        wp_x = pos_it->second.first;
+        wp_y = pos_it->second.second;
+        found = true;
       }
     }
 

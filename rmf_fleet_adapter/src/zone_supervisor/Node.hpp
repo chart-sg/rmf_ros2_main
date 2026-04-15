@@ -71,6 +71,7 @@ private:
     std::string fleet_name;
     std::string zone_name;
     rclcpp::Time assigned_at;
+    std::string request_id;
     bool has_orientation = false;
     double orientation = 0.0;
 
@@ -148,7 +149,7 @@ private:
   void _publish_state_with_rejection(
     const std::string& robot_name,
     const std::string& fleet_name,
-    const builtin_interfaces::msg::Time& request_stamp,
+    const std::string& request_id,
     const std::string& zone_name,
     const std::string& reason);
 

@@ -190,7 +190,7 @@ void Node::_process_entry(
   const rmf_zone_msgs::msg::ZoneRequest::SharedPtr msg)
 {
   // Already booked? Return existing booking.
-  for (const auto& [wp_name, entry] : _zone_log)
+  for (auto& [wp_name, entry] : _zone_log)
   {
     if (entry.robot_name == msg->robot_name
       && entry.fleet_name == msg->fleet_name
@@ -201,6 +201,9 @@ void Node::_process_entry(
         "Returning existing booking.",
         msg->robot_name.c_str(), wp_name.c_str(),
         msg->zone_name.c_str());
+      // Refresh request_id so the new request can match the existing
+      // booking via exact-equality in ZoneEntry.
+      entry.request_id = msg->request_id;
       _publish_state();
       return;
     }
@@ -215,7 +218,7 @@ void Node::_process_entry(
       msg->zone_name.c_str(), msg->robot_name.c_str());
     _publish_state_with_rejection(
       msg->robot_name, msg->fleet_name,
-      msg->request_stamp, msg->zone_name, "unknown_zone");
+      msg->request_id, msg->zone_name, "unknown_zone");
     return;
   }
 
@@ -225,7 +228,7 @@ void Node::_process_entry(
   {
     _publish_state_with_rejection(
       msg->robot_name, msg->fleet_name,
-      msg->request_stamp, msg->zone_name, result.rejection_reason);
+      msg->request_id, msg->zone_name, result.rejection_reason);
     return;
   }
 
@@ -235,6 +238,7 @@ void Node::_process_entry(
   log_entry.fleet_name = msg->fleet_name;
   log_entry.zone_name = msg->zone_name;
   log_entry.assigned_at = this->now();
+  log_entry.request_id = msg->request_id;
   log_entry.has_orientation = msg->modifiers.has_orientation_hint;
   log_entry.orientation = msg->modifiers.orientation_hint;
 
@@ -496,6 +500,7 @@ rmf_zone_msgs::msg::ZoneState Node::_build_state_msg()
     booking.assigned_waypoint_name = wp_name;
     booking.has_orientation = entry.has_orientation;
     booking.orientation = entry.orientation;
+    booking.request_id = entry.request_id;
 
     state.bookings.push_back(std::move(booking));
   }
@@ -513,7 +518,7 @@ void Node::_publish_state()
 void Node::_publish_state_with_rejection(
   const std::string& robot_name,
   const std::string& fleet_name,
-  const builtin_interfaces::msg::Time& request_stamp,
+  const std::string& request_id,
   const std::string& zone_name,
   const std::string& reason)
 {
@@ -522,7 +527,7 @@ void Node::_publish_state_with_rejection(
   auto rejection = rmf_zone_msgs::msg::ZoneRejection();
   rejection.robot_name = robot_name;
   rejection.fleet_name = fleet_name;
-  rejection.request_stamp = request_stamp;
+  rejection.request_id = request_id;
   rejection.zone_name = zone_name;
   rejection.reason = reason;
   state.rejected.push_back(std::move(rejection));

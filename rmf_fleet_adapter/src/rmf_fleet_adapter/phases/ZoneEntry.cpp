@@ -17,6 +17,7 @@
 */
 
 #include "ZoneEntry.hpp"
+#include "Utils.hpp"
 
 namespace rmf_fleet_adapter {
 namespace phases {
@@ -119,7 +120,8 @@ void ZoneEntry::ActivePhase::_init_obs()
           {
             if (booking.robot_name == robot_name
               && booking.fleet_name == fleet_name
-              && booking.zone_name == self->_data.zone_name)
+              && booking.zone_name == self->_data.zone_name
+              && booking.request_id == self->_current_request_id)
             {
               RCLCPP_INFO(self->_context->node()->get_logger(),
                 "Zone booking confirmed: [%s] assigned to waypoint [%s] "
@@ -180,7 +182,7 @@ void ZoneEntry::ActivePhase::_init_obs()
           {
             if (rejection.robot_name == robot_name
               && rejection.fleet_name == fleet_name
-              && rejection.request_stamp == self->_current_request_stamp)
+              && rejection.request_id == self->_current_request_id)
             {
               if (rejection.reason == "unknown_zone")
               {
@@ -216,11 +218,13 @@ void ZoneEntry::ActivePhase::_init_obs()
             return;
 
           // Re-request after a rejection
-          self->_current_request_stamp = self->_context->node()->now();
+          self->_current_request_id = generate_zone_request_id(
+            self->_context->group(), self->_context->name(),
+            self->_data.zone_name);
           auto request = rmf_zone_msgs::msg::ZoneRequest();
           request.robot_name = self->_context->name();
           request.fleet_name = self->_context->group();
-          request.request_stamp = self->_current_request_stamp;
+          request.request_id = self->_current_request_id;
           request.zone_name = self->_data.zone_name;
           request.request_type = rmf_zone_msgs::msg::ZoneRequest::ENTRY;
           request.modifiers =
@@ -235,11 +239,13 @@ void ZoneEntry::ActivePhase::_init_obs()
         rmf_zone_msgs::msg::ZoneRequest>(
         ZoneRequestTopicName, rclcpp::QoS(10).reliable());
 
-      self->_current_request_stamp = node->now();
+      self->_current_request_id = generate_zone_request_id(
+        self->_context->group(), self->_context->name(),
+        self->_data.zone_name);
       auto request = rmf_zone_msgs::msg::ZoneRequest();
       request.robot_name = self->_context->name();
       request.fleet_name = self->_context->group();
-      request.request_stamp = self->_current_request_stamp;
+      request.request_id = self->_current_request_id;
       request.zone_name = self->_data.zone_name;
       request.request_type = rmf_zone_msgs::msg::ZoneRequest::ENTRY;
       request.modifiers =
@@ -310,7 +316,8 @@ void ZoneEntry::ActivePhase::cancel()
     auto request = rmf_zone_msgs::msg::ZoneRequest();
     request.robot_name = _context->name();
     request.fleet_name = _context->group();
-    request.request_stamp = _context->node()->now();
+    request.request_id = generate_zone_request_id(
+      _context->group(), _context->name(), _data.zone_name);
     request.zone_name = _data.zone_name;
     request.request_type = rmf_zone_msgs::msg::ZoneRequest::EXIT;
     _request_pub->publish(request);

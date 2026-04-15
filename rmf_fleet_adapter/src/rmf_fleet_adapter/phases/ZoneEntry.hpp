@@ -99,7 +99,7 @@ private:
   rclcpp::Subscription<rmf_zone_msgs::msg::ZoneState>::SharedPtr _state_sub;
   rclcpp::Publisher<rmf_zone_msgs::msg::ZoneRequest>::SharedPtr _request_pub;
 
-  builtin_interfaces::msg::Time _current_request_stamp;
+  std::string _current_request_id;
   bool _has_pending_request = false;
 
   rclcpp::TimerBase::SharedPtr _delay_timer;

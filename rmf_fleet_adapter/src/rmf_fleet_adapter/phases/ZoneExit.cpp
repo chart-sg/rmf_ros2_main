@@ -17,6 +17,7 @@
 */
 
 #include "ZoneExit.hpp"
+#include "Utils.hpp"
 
 namespace rmf_fleet_adapter {
 namespace phases {
@@ -150,7 +151,8 @@ void ZoneExit::ActivePhase::_init_obs()
       auto request = rmf_zone_msgs::msg::ZoneRequest();
       request.robot_name = self->_context->name();
       request.fleet_name = self->_context->group();
-      request.request_stamp = node->now();
+      request.request_id = generate_zone_request_id(
+        self->_context->group(), self->_context->name(), self->_zone_name);
       request.zone_name = self->_zone_name;
       request.request_type = rmf_zone_msgs::msg::ZoneRequest::EXIT;
 
@@ -177,7 +179,9 @@ void ZoneExit::ActivePhase::_init_obs()
             auto request = rmf_zone_msgs::msg::ZoneRequest();
             request.robot_name = self->_context->name();
             request.fleet_name = self->_context->group();
-            request.request_stamp = self->_context->node()->now();
+            request.request_id = generate_zone_request_id(
+              self->_context->group(), self->_context->name(),
+              self->_zone_name);
             request.zone_name = self->_zone_name;
             request.request_type = rmf_zone_msgs::msg::ZoneRequest::EXIT;
             self->_request_pub->publish(request);

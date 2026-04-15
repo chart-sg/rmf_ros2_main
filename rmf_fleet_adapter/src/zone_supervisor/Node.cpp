@@ -102,6 +102,7 @@ void Node::_on_nav_graphs(
 {
   const std::string fleet_name = msg->name;
 
+  std::string zone_list;
   for (const auto& zone : msg->zones)
   {
     ZoneInfo info;
@@ -129,15 +130,12 @@ void Node::_on_nav_graphs(
     // assuming that zone names are unique across fleets,
     // later insert will overwrite earlier one if there are duplicates
     _zones[zone.name] = std::move(info);
-  }
 
-  std::string zone_list;
-  for (const auto& zone : msg->zones)
-  {
     if (!zone_list.empty())
       zone_list += ", ";
     zone_list += zone.name;
   }
+
   RCLCPP_INFO(this->get_logger(),
     "Registered %zu zones from fleet [%s] nav_graph, the zones are: [%s]",
     msg->zones.size(), fleet_name.c_str(), zone_list.c_str());

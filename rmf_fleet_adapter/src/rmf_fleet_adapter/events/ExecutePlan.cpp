@@ -348,14 +348,14 @@ public:
       return;
 
     // Already booked in this zone (e.g. replan after supervisor assignment)
-    if (!_context->zone_assigned_waypoint().empty())
+    if (!_context->booked_zone_waypoint().empty())
     {
       const auto& graph = _context->navigation_graph();
       const auto zone_props = graph.find_known_zone(
         zone_entry.zone_name());
       // To check if the assigned waypoint belongs to the this target zone
       if (zone_props && zone_props->find_internal_vertex(
-          _context->zone_assigned_waypoint()))
+          _context->booked_zone_waypoint()))
         return;
     }
 
@@ -380,7 +380,7 @@ public:
 
   void execute(const ZoneExit& zone_exit) final
   {
-    const bool has_booking = !_context->zone_assigned_waypoint().empty();
+    const bool has_booking = !_context->booked_zone_waypoint().empty();
     if (!has_booking)
       return;
 
@@ -389,7 +389,7 @@ public:
     const auto zone_props = graph.find_known_zone(
       zone_exit.zone_name());
     if (!zone_props || !zone_props->find_internal_vertex(
-        _context->zone_assigned_waypoint()))
+        _context->booked_zone_waypoint()))
       return;
 
     _phases.emplace_back(

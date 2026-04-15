@@ -81,7 +81,7 @@ ZoneExit::ActivePhase::ActivePhase(
   _plan_id(std::move(plan_id)),
   _description_text("Releasing zone booking for [" + zone_name + "]")
 {
-  _assigned_waypoint = _context->zone_assigned_waypoint();
+  _assigned_waypoint = _context->booked_zone_waypoint();
   _zone_name = std::move(zone_name);
 
   if (_assigned_waypoint.empty())
@@ -130,8 +130,8 @@ void ZoneExit::ActivePhase::_init_obs()
             self->_assigned_waypoint.c_str(),
             self->_zone_name.c_str());
 
-          self->_context->clear_zone_supervisor_goal();
-          self->_context->clear_zone_assigned_waypoint();
+          self->_context->clear_booked_zone_goal();
+          self->_context->clear_booked_zone_waypoint();
 
           self->_timeout_timer.reset();
           self->_delay_timer.reset();
@@ -188,8 +188,8 @@ void ZoneExit::ActivePhase::_init_obs()
           }
 
           // Clean up locally even on timeout
-          self->_context->clear_zone_supervisor_goal();
-          self->_context->clear_zone_assigned_waypoint();
+          self->_context->clear_booked_zone_goal();
+          self->_context->clear_booked_zone_waypoint();
 
           self->_state_sub.reset();
           self->_delay_timer.reset();

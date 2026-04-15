@@ -1038,25 +1038,30 @@ public:
   /// Check whether this robot is currently doing a zone task.
   bool is_zone_task() const;
 
-  /// Goal assigned by the zone supervisor,
-  /// not cleared until ZoneExit confirms release.
-  void set_zone_supervisor_goal(rmf_traffic::agv::Plan::Goal goal);
+  /// Planner goal for the active zone booking (waypoint index +
+  /// orientation). Consumed by GoToPlace::_find_plan() to override the
+  /// planner's destination while in a zone task.
+  void set_booked_zone_goal(rmf_traffic::agv::Plan::Goal goal);
 
-  /// Get the current goal assigned by the zone supervisor
-  std::optional<rmf_traffic::agv::Plan::Goal> zone_supervisor_goal() const;
+  /// Get the planner goal for the active zone booking.
+  std::optional<rmf_traffic::agv::Plan::Goal> booked_zone_goal() const;
 
-  /// Clear the goal assigned by the zone supervisor.
-  void clear_zone_supervisor_goal();
+  /// Clear the planner goal for the active zone booking.
+  void clear_booked_zone_goal();
 
-  /// Waypoint name this robot is booked at. Non-empty means an active
-  /// zone booking exists. Also controls stubbornness.
-  void set_zone_assigned_waypoint(std::string name);
+  /// Waypoint name of the active zone booking. Non-empty means the
+  /// supervisor has granted this robot a booking that has not yet been
+  /// released. As a lifecycle side effect, non-empty also keeps the robot
+  /// stubborn in schedule negotiations: stubbornness is acquired on set,
+  /// released on clear.
+  void set_booked_zone_waypoint(std::string name);
 
-  /// Get the waypoint name this robot is booked at.
-  const std::string& zone_assigned_waypoint() const;
+  /// Get the waypoint name of the active zone booking.
+  const std::string& booked_zone_waypoint() const;
 
-  /// Clear the waypoint name this robot is booked at.
-  void clear_zone_assigned_waypoint();
+  /// Clear the waypoint name of the active zone booking (also releases
+  /// stubbornness).
+  void clear_booked_zone_waypoint();
 
   /// First waypoint from the current location() start set, or nullopt.
   std::optional<std::size_t> current_waypoint() const;
@@ -1137,9 +1142,9 @@ private:
 
   ZoneTaskModifiers _zone_task_modifiers;
   bool _is_zone_task = false;
-  std::string _zone_assigned_waypoint;
+  std::string _booked_zone_waypoint;
   std::shared_ptr<void> _zone_stubbornness;
-  std::optional<rmf_traffic::agv::Plan::Goal> _zone_supervisor_goal;
+  std::optional<rmf_traffic::agv::Plan::Goal> _booked_zone_goal;
 
   RobotUpdateHandle::Unstable::Watchdog _lift_watchdog;
   rmf_traffic::Duration _lift_rewait_duration = std::chrono::seconds(0);

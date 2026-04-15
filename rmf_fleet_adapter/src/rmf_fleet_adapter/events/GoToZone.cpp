@@ -239,8 +239,8 @@ auto GoToZone::Standby::begin(
 
   // On task completion/cancel/kill, reset task-level zone state:
   // - is_zone_task and zone_task_modifiers: no longer applicable.
-  // - zone_supervisor_goal: reset for new tasks
-  // zone_assigned_waypoint is intentionally NOT cleared here: it gates
+  // - booked_zone_goal: reset for new tasks
+  // booked_zone_waypoint is intentionally NOT cleared here: it gates
   // stubbornness and is cleared by ZoneExit / ZoneBookingRevoked so the
   // robot stays stubborn until it properly leaves the zone.
   auto wrapped_finished =
@@ -248,7 +248,7 @@ auto GoToZone::Standby::begin(
     {
       context->set_is_zone_task(false);
       context->set_zone_task_modifiers({});
-      context->clear_zone_supervisor_goal();
+      context->clear_booked_zone_goal();
       finished();
     };
 

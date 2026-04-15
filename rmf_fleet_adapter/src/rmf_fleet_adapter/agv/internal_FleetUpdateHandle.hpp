@@ -665,8 +665,8 @@ public:
             msg->zone_name.c_str(),
             msg->reason.c_str());
 
-          context->clear_zone_supervisor_goal();
-          context->clear_zone_assigned_waypoint();
+          context->clear_booked_zone_goal();
+          context->clear_booked_zone_waypoint();
           context->set_zone_task_modifiers({});
           context->set_is_zone_task(false);
           return;

@@ -625,42 +625,42 @@ bool RobotContext::is_zone_task() const
 }
 
 //==============================================================================
-void RobotContext::set_zone_supervisor_goal(rmf_traffic::agv::Plan::Goal goal)
+void RobotContext::set_booked_zone_goal(rmf_traffic::agv::Plan::Goal goal)
 {
-  _zone_supervisor_goal = std::move(goal);
+  _booked_zone_goal = std::move(goal);
 }
 
 //==============================================================================
 std::optional<rmf_traffic::agv::Plan::Goal>
-RobotContext::zone_supervisor_goal() const
+RobotContext::booked_zone_goal() const
 {
-  return _zone_supervisor_goal;
+  return _booked_zone_goal;
 }
 
 //==============================================================================
-void RobotContext::clear_zone_supervisor_goal()
+void RobotContext::clear_booked_zone_goal()
 {
-  _zone_supervisor_goal = std::nullopt;
+  _booked_zone_goal = std::nullopt;
 }
 
 //==============================================================================
-void RobotContext::set_zone_assigned_waypoint(std::string name)
+void RobotContext::set_booked_zone_waypoint(std::string name)
 {
-  _zone_assigned_waypoint = std::move(name);
+  _booked_zone_waypoint = std::move(name);
   if (!_zone_stubbornness)
     _zone_stubbornness = be_stubborn();
 }
 
 //==============================================================================
-const std::string& RobotContext::zone_assigned_waypoint() const
+const std::string& RobotContext::booked_zone_waypoint() const
 {
-  return _zone_assigned_waypoint;
+  return _booked_zone_waypoint;
 }
 
 //==============================================================================
-void RobotContext::clear_zone_assigned_waypoint()
+void RobotContext::clear_booked_zone_waypoint()
 {
-  _zone_assigned_waypoint.clear();
+  _booked_zone_waypoint.clear();
   _zone_stubbornness = nullptr;
 }
 

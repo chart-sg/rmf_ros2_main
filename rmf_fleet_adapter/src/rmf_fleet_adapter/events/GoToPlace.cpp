@@ -540,9 +540,9 @@ void GoToPlace::Active::_find_plan()
 
   // Use zone supervisor's assigned goal if this is a zone task.
   if (_context->is_zone_task()
-    && _context->zone_supervisor_goal().has_value())
+    && _context->booked_zone_goal().has_value())
   {
-    _chosen_goal = *_context->zone_supervisor_goal();
+    _chosen_goal = *_context->booked_zone_goal();
   }
 
   if (!_chosen_goal.has_value() && _description.prefer_same_map() )

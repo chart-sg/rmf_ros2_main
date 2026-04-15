@@ -160,8 +160,8 @@ void ZoneEntry::ActivePhase::_init_obs()
                 goal = rmf_traffic::agv::Plan::Goal(
                   wp->index(), booking.orientation);
 
-              self->_context->set_zone_supervisor_goal(goal);
-              self->_context->set_zone_assigned_waypoint(
+              self->_context->set_booked_zone_goal(goal);
+              self->_context->set_booked_zone_waypoint(
                 booking.assigned_waypoint_name);
 
               self->_context->request_replan();
@@ -212,7 +212,7 @@ void ZoneEntry::ActivePhase::_init_obs()
 
           // nothing to do if we already have a booking or
           // a request in flight
-          if (!self->_context->zone_assigned_waypoint().empty())
+          if (!self->_context->booked_zone_waypoint().empty())
             return;
           if (self->_has_pending_request)
             return;
@@ -324,10 +324,10 @@ void ZoneEntry::ActivePhase::cancel()
   }
 
   // Clear fleet adapter side zone state if a booking was granted
-  if (!_context->zone_assigned_waypoint().empty())
+  if (!_context->booked_zone_waypoint().empty())
   {
-    _context->clear_zone_supervisor_goal();
-    _context->clear_zone_assigned_waypoint();
+    _context->clear_booked_zone_goal();
+    _context->clear_booked_zone_waypoint();
   }
 
 }

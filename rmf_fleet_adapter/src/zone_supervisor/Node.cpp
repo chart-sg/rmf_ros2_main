@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <unordered_set>
 
 namespace rmf_fleet_adapter {
 namespace zone_supervisor {
@@ -104,8 +105,6 @@ void Node::_on_nav_graphs(
   for (const auto& zone : msg->zones)
   {
     ZoneInfo info;
-    info.zone_name = zone.name;
-
     for (const auto& vtx : zone.vertices)
     {
       ZoneWaypointInfo wp_info;
@@ -242,7 +241,7 @@ void Node::_process_entry(
   log_entry.has_orientation = msg->modifiers.has_orientation_hint;
   log_entry.orientation = msg->modifiers.orientation_hint;
 
-  _zone_log[result.selected.name] = std::move(log_entry);
+  _insert_booking(result.selected.name, std::move(log_entry));
 
   RCLCPP_INFO(this->get_logger(),
     "Booked waypoint [%s] in zone [%s] for robot [%s/%s]",
@@ -268,7 +267,7 @@ void Node::_process_exit(
         msg->robot_name.c_str());
 
       _suspect_bookings.erase(it->first);
-      _zone_log.erase(it);
+      _erase_booking(it);
       _erase_robot_position(msg->fleet_name, msg->robot_name);
       _publish_state();
       return;
@@ -352,18 +351,19 @@ void Node::_on_manual_release(
 void Node::_on_fleet_state(
   const rmf_fleet_msgs::msg::FleetState::SharedPtr msg)
 {
-  // Only track positions of robots that have active zone bookings
+  // Only track positions of robots that have active zone bookings.
+  auto fleet_it = _booked_robots_by_fleet.find(msg->name);
+  if (fleet_it == _booked_robots_by_fleet.end())
+    return;
+
+  const auto& booked = fleet_it->second;
   for (const auto& robot : msg->robots)
   {
-    for (const auto& [_, entry] : _zone_log)
+    if (booked.count(robot.name))
     {
-      if (entry.robot_name == robot.name && entry.fleet_name == msg->name)
-      {
-        _robot_positions[msg->name][robot.name] = {
-          robot.location.x, robot.location.y
-        };
-        break;
-      }
+      _robot_positions[msg->name][robot.name] = {
+        robot.location.x, robot.location.y
+      };
     }
   }
 }
@@ -467,7 +467,7 @@ void Node::_remove_booking(
     return;
 
   const auto entry = it->second;
-  _zone_log.erase(it);
+  _erase_booking(it);
   _suspect_bookings.erase(wp_name);
   _erase_robot_position(entry.fleet_name, entry.robot_name);
 
@@ -586,6 +586,28 @@ void Node::_erase_robot_position(
   fleet_it->second.erase(robot_name);
   if (fleet_it->second.empty())
     _robot_positions.erase(fleet_it);
+}
+
+//==============================================================================
+void Node::_insert_booking(const std::string& wp_name, ZoneLogEntry entry)
+{
+  _booked_robots_by_fleet[entry.fleet_name].insert(entry.robot_name);
+  _zone_log[wp_name] = std::move(entry);
+}
+
+//==============================================================================
+void Node::_erase_booking(
+  std::unordered_map<std::string, ZoneLogEntry>::iterator it)
+{
+  const auto& entry = it->second;
+  auto fleet_it = _booked_robots_by_fleet.find(entry.fleet_name);
+  if (fleet_it != _booked_robots_by_fleet.end())
+  {
+    fleet_it->second.erase(entry.robot_name);
+    if (fleet_it->second.empty())
+      _booked_robots_by_fleet.erase(fleet_it);
+  }
+  _zone_log.erase(it);
 }
 
 } // namespace zone_supervisor

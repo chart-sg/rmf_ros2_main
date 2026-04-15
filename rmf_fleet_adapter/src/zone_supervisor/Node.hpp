@@ -58,8 +58,8 @@ private:
 
   struct ZoneInfo
   {
-    std::string zone_name;
     std::vector<ZoneWaypointInfo> waypoints;  // sorted by priority ascending
+    // will extend in the future to include more info about the zone
   };
 
   std::unordered_map<std::string, ZoneInfo> _zones;
@@ -83,6 +83,10 @@ private:
   // Keyed by assigned waypoint name (presume zone waypoint name are
   // unique across fleets).
   std::unordered_map<std::string, ZoneLogEntry> _zone_log;
+
+  // fleet_name -> set of robot_names with active bookings.
+  std::unordered_map<std::string,
+    std::unordered_set<std::string>> _booked_robots_by_fleet;
 
   // Callback groups
   rclcpp::CallbackGroup::SharedPtr _callback_group;
@@ -166,6 +170,10 @@ private:
 
   void _erase_robot_position(
     const std::string& fleet_name, const std::string& robot_name);
+
+  void _insert_booking(const std::string& wp_name, ZoneLogEntry entry);
+  void _erase_booking(
+    std::unordered_map<std::string, ZoneLogEntry>::iterator it);
 
   struct SelectionResult
   {

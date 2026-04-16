@@ -658,6 +658,19 @@ public:
             || context->group() != msg->fleet_name)
             continue;
 
+          // Ignore revocations that don't correspond to the robot's
+          // current booking.
+          if (context->booked_zone_waypoint() != msg->assigned_waypoint_name)
+          {
+            RCLCPP_DEBUG(context->node()->get_logger(),
+              "Ignoring stale ZoneBookingRevoked for [%s]: waypoint [%s] "
+              "does not match current booking [%s]",
+              msg->robot_name.c_str(),
+              msg->assigned_waypoint_name.c_str(),
+              context->booked_zone_waypoint().c_str());
+            return;
+          }
+
           RCLCPP_WARN(context->node()->get_logger(),
             "Zone booking revoked for [%s] at waypoint [%s] in zone [%s]: %s",
             msg->robot_name.c_str(),

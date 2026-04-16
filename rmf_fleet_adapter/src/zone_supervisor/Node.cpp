@@ -22,7 +22,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <unordered_set>
 
 namespace rmf_fleet_adapter {
 namespace zone_supervisor {

@@ -594,11 +594,6 @@ std::optional<rmf_traffic::agv::Graph> convert(
       {e.v2_idx, exit_event, exit_constraint},
       std::move(lane_properties));
   }
-  // for (const auto& z : navgraph.zones)
-  // {
-  //   const std::string zone_name = z.name;
-  //   graph.set_known_zone(zone_name);
-  // }
 
   return graph;
 }

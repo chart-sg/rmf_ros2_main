@@ -1,4 +1,3 @@
-
 #include "Node.hpp"
 
 #include <rmf_fleet_adapter/StandardNames.hpp>

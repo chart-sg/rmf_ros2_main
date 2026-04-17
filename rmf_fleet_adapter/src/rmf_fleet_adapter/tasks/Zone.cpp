@@ -1,4 +1,3 @@
-
 #include "Zone.hpp"
 
 #include <rmf_task_sequence/Task.hpp>

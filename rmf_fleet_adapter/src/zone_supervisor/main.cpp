@@ -1,4 +1,3 @@
-
 #include "Node.hpp"
 
 #include <rclcpp/executors.hpp>

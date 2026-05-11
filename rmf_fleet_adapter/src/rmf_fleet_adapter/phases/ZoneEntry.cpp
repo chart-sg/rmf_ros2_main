@@ -14,6 +14,7 @@ rmf_zone_msgs::msg::ZoneModifiers to_msg_modifiers(
   out.has_orientation_hint = mods.orientation_hint.has_value();
   out.orientation_hint = mods.orientation_hint.value_or(0.0);
   out.preferred_waypoints = mods.preferred_waypoints;
+  out.boundary_closure = mods.boundary_closure.value_or(false);
   return out;
 }
 } // anonymous namespace
@@ -235,6 +236,22 @@ void ZoneEntry::ActivePhase::_init_obs()
 
       self->_request_pub->publish(request);
       self->_has_pending_request = true;
+
+      // Publish ZoneBoundaryClosure for other fleets
+      self->_zbc_pub = node->create_publisher<
+        rmf_zone_msgs::msg::ZoneBoundaryClosure>(
+        ZoneBoundaryClosureTopicName, rclcpp::QoS(10).reliable());
+
+      bool boundary_closure = self->_context->boundary_closure_active();
+      if (boundary_closure)
+      {
+        auto zbc = rmf_zone_msgs::msg::ZoneBoundaryClosure();
+        zbc.zone_name = self->_data.zone_name;
+        zbc.fleet_name = self->_context->group();
+        zbc.active = true;
+
+        self->_zbc_pub->publish(zbc);
+      }
 
       // Report delay while waiting for zone supervisor
       self->_delay_timer = node->try_create_wall_timer(

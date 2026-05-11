@@ -7,6 +7,7 @@
 
 #include <rmf_zone_msgs/msg/zone_request.hpp>
 #include <rmf_zone_msgs/msg/zone_state.hpp>
+#include <rmf_zone_msgs/msg/zone_boundary_closure.hpp>
 
 namespace rmf_fleet_adapter {
 namespace phases {
@@ -77,6 +78,7 @@ private:
 
   rclcpp::Subscription<rmf_zone_msgs::msg::ZoneState>::SharedPtr _state_sub;
   rclcpp::Publisher<rmf_zone_msgs::msg::ZoneRequest>::SharedPtr _request_pub;
+  rclcpp::Publisher<rmf_zone_msgs::msg::ZoneBoundaryClosure>::SharedPtr _zbc_pub;
 
   rclcpp::TimerBase::SharedPtr _timeout_timer;
   rclcpp::TimerBase::SharedPtr _delay_timer;

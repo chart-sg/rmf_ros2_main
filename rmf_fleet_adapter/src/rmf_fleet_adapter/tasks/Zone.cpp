@@ -103,6 +103,11 @@ void add_zone(
               return {nullptr, errors};
           }
         }
+        if (const auto bc_it = mod_it->find("boundary_closure");
+            bc_it != mod_it->end())
+        {
+          m.boundary_closure = bc_it->get<bool>();
+        }
         // extend with more modifiers here in future
         modifiers = std::move(m);
       }

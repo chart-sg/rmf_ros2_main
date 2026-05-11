@@ -1026,11 +1026,20 @@ public:
     std::string group_hint;
     std::optional<double> orientation_hint;
     std::vector<std::string> preferred_waypoints;
+    std::optional<bool> boundary_closure;
   };
 
   /// Set the modifiers for a zone task.
   void set_zone_task_modifiers(ZoneTaskModifiers modifiers);
+
+  /// Get the modifiers for a zone task.
   const ZoneTaskModifiers& zone_task_modifiers() const;
+
+  /// Set whether boundary closure is active for the current zone task.
+  void set_boundary_closure_active(bool active);
+
+  /// Returns true if the current zone task requested boundary closure.
+  bool boundary_closure_active() const;
 
   /// Set whether this robot is currently doing a zone task.
   void set_is_zone_task(bool value);
@@ -1141,6 +1150,7 @@ private:
   bool _robot_finishing_request = false;
 
   ZoneTaskModifiers _zone_task_modifiers;
+  bool _boundary_closure_active = false;
   bool _is_zone_task = false;
   std::string _booked_zone_waypoint;
   std::shared_ptr<void> _zone_stubbornness;

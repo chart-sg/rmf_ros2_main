@@ -166,11 +166,14 @@ auto GoToZone::Standby::begin(
     ztm.group_hint = mods.group_hint;
     ztm.orientation_hint = mods.orientation_hint;
     ztm.preferred_waypoints = mods.preferred_waypoints;
+    ztm.boundary_closure = mods.boundary_closure;
     _context->set_zone_task_modifiers(std::move(ztm));
+    _context->set_boundary_closure_active(mods.boundary_closure.value_or(false));
   }
   else
   {
     _context->set_zone_task_modifiers({});
+    _context->set_boundary_closure_active(false);
   }
   _context->set_is_zone_task(true);
 

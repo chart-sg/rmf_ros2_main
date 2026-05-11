@@ -13,7 +13,11 @@
       "description": "Optional modifiers that influence waypoint selection within the zone. If present, at least one modifier field must be specified.",
       "type": "object",
       "properties": {
-        "waypoint_preference": { "$ref": "#/$defs/waypoint_preference" }
+        "waypoint_preference": { "$ref": "#/$defs/waypoint_preference" },
+        "boundary_closure": {
+          "type": "boolean",
+          "description": "If true, the Zone Supervisor will close all navigation lanes that geometrically cross or touch this zone's boundary when the robot enters the zone, and reopen them when the robot exits."
+        }
       },
       "minProperties": 1,
       "additionalProperties": false

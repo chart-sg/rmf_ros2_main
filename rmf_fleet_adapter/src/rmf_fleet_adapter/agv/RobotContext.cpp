@@ -613,6 +613,18 @@ auto RobotContext::zone_task_modifiers() const -> const ZoneTaskModifiers&
 }
 
 //==============================================================================
+void RobotContext::set_boundary_closure_active(bool active)
+{
+  _boundary_closure_active = active;
+}
+
+//==============================================================================
+bool RobotContext::boundary_closure_active() const
+{
+  return _boundary_closure_active;
+}
+
+//==============================================================================
 void RobotContext::set_is_zone_task(bool value)
 {
   _is_zone_task = value;

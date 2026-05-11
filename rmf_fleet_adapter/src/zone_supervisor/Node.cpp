@@ -3,7 +3,6 @@
 #include <rmf_fleet_adapter/StandardNames.hpp>
 
 #include <algorithm>
-#include <cmath>
 
 namespace rmf_fleet_adapter {
 namespace zone_supervisor {

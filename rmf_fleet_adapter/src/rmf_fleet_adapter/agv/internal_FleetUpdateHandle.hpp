@@ -39,6 +39,7 @@
 #include <rmf_fleet_msgs/msg/charging_assignments.hpp>
 #include <rmf_fleet_msgs/msg/emergency_signal.hpp>
 #include <rmf_zone_msgs/msg/zone_booking_revoked.hpp>
+#include <rmf_zone_msgs/msg/zone_boundary_closure.hpp>
 #include <std_msgs/msg/bool.hpp>
 
 #include <rmf_fleet_adapter/agv/FleetUpdateHandle.hpp>
@@ -313,15 +314,21 @@ public:
 
   rclcpp::Subscription<rmf_fleet_msgs::msg::ChargingAssignments>::SharedPtr
     charging_assignments_sub = nullptr;
-
-  rclcpp::Subscription<rmf_zone_msgs::msg::ZoneBookingRevoked>::SharedPtr
-    zone_booking_revoked_sub = nullptr;
   using ChargingAssignments = rmf_fleet_msgs::msg::ChargingAssignments;
   using ChargingAssignment = rmf_fleet_msgs::msg::ChargingAssignment;
   // Keep track of charging assignments for robots that have not been registered
   // yet.
   std::unordered_map<std::string, ChargingAssignment>
   unregistered_charging_assignments = {};
+
+  rclcpp::Subscription<rmf_zone_msgs::msg::ZoneBookingRevoked>::SharedPtr
+    zone_booking_revoked_sub = nullptr;
+  
+  rclcpp::Subscription<rmf_zone_msgs::msg::ZoneBoundaryClosure>::SharedPtr
+    zone_boundary_closure_sub = nullptr;
+  // Cache lanes that are crossing each zones when we receive a zone boundary closure
+  std::unordered_map<std::string, std::vector<std::size_t>>
+    zone_crossing_cache;
 
   using DockParamMap =
     std::unordered_map<
@@ -684,6 +691,42 @@ public:
           context->set_is_zone_task(false);
           return;
         }
+      });
+
+    handle->_pimpl->zone_boundary_closure_sub =
+      handle->_pimpl->node->create_subscription<
+      rmf_zone_msgs::msg::ZoneBoundaryClosure>(
+      ZoneBoundaryClosureTopicName, 10,
+      [w = handle->weak_from_this(), graph](
+        const rmf_zone_msgs::msg::ZoneBoundaryClosure::SharedPtr msg)
+      {
+        const auto self = w.lock();
+        if (!self)
+          return;
+
+        // Don't process boundary closure for the requesting fleet
+        if (self->_pimpl->name == msg->fleet_name)
+          return;
+
+        auto& cache = self->_pimpl->zone_crossing_cache;
+        auto it = cache.find(msg->zone_name);
+        if (it == cache.end())
+        {
+          const auto zone = graph.find_known_zone(msg->zone_name);
+          if (!zone)
+            return;
+          it = cache.emplace(
+            msg->zone_name, graph.lanes_crossing(msg->zone_name)).first;
+        }
+
+        const auto& crossing_lanes = it->second;
+        if (crossing_lanes.empty())
+          return;
+
+        if (msg->active)
+          self->close_lanes(crossing_lanes);
+        else
+          self->open_lanes(crossing_lanes);
       });
 
     handle->_pimpl->deserialization.event->add(

@@ -87,6 +87,13 @@ void ZoneExit::ActivePhase::_init_obs()
 
       const auto node = self->_context->node();
 
+      // Create ZoneBoundaryClosure publisher before the state subscriber 
+      // so it is ready if transient_local delivers a retained message 
+      // immediately.
+      self->_zbc_pub = node->create_publisher<
+        rmf_zone_msgs::msg::ZoneBoundaryClosure>(
+        ZoneBoundaryClosureTopicName, rclcpp::QoS(10).reliable());
+
       auto qos = rclcpp::QoS(10).transient_local().reliable();
       self->_state_sub = node->create_subscription<
         rmf_zone_msgs::msg::ZoneState>(
@@ -111,6 +118,21 @@ void ZoneExit::ActivePhase::_init_obs()
             "Zone booking released: [%s] cleared from zone [%s]",
             self->_assigned_waypoint.c_str(),
             self->_zone_name.c_str());
+
+          // Lift the boundary closure so other fleets don't reopen
+          // lanes while this robot is still physically inside the zone.
+          if (self->_context->boundary_closure_active())
+          {
+            RCLCPP_INFO(self->_context->node()->get_logger(),
+              "Lifting boundary closure for zone [%s] on behalf of fleet [%s]",
+              self->_zone_name.c_str(), self->_context->group().c_str());
+            auto zbc = rmf_zone_msgs::msg::ZoneBoundaryClosure();
+            zbc.zone_name = self->_zone_name;
+            zbc.fleet_name = self->_context->group();
+            zbc.active = false;
+            self->_zbc_pub->publish(zbc);
+            self->_context->set_boundary_closure_active(false);
+          }
 
           self->_context->clear_booked_zone_goal();
           self->_context->clear_booked_zone_waypoint();
@@ -170,6 +192,7 @@ void ZoneExit::ActivePhase::_init_obs()
           }
 
           // Clean up locally even on timeout
+          self->_context->set_boundary_closure_active(false);
           self->_context->clear_booked_zone_goal();
           self->_context->clear_booked_zone_waypoint();
 

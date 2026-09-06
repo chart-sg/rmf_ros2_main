@@ -1115,9 +1115,6 @@ public:
   void for_each_releasable_booking(
     const std::function<void(const ZoneBooking&)>& fn) const;
 
-  /// First waypoint from the current location() start set, or nullopt.
-  std::optional<std::size_t> current_waypoint() const;
-
 private:
 
   RobotContext(

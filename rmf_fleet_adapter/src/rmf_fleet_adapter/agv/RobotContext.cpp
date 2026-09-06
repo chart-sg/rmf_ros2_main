@@ -780,15 +780,6 @@ void RobotContext::for_each_releasable_booking(
 }
 
 //==============================================================================
-std::optional<std::size_t> RobotContext::current_waypoint() const
-{
-  if (_location.empty())
-    return std::nullopt;
-
-  return _location.front().waypoint();
-}
-
-//==============================================================================
 void RobotContext::set_location(rmf_traffic::agv::Plan::StartSet location_)
 {
   for (auto& location : location_)

@@ -120,7 +120,11 @@ public:
     /// Finish the event.
     void _complete();
 
-    /// Stop listening to the manager.
+    /// Drop the subscription and the retry timer, without deciding whether
+    /// the manager still owes us an answer.
+    void _stop_listening();
+
+    /// Stop listening and forget that a request is outstanding.
     void _clear_manager_subscriptions();
 
     AssignIDPtr _assign_id;
@@ -146,6 +150,8 @@ public:
     agv::RobotContext::ZonePreferenceHandle _preference;
 
     std::string _current_request_id;
+
+    /// A request is out and no answer has arrived.
     bool _has_pending_request = false;
     bool _interrupted = false;
 

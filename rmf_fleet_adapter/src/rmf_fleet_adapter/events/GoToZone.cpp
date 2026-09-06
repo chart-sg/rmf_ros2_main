@@ -413,10 +413,18 @@ void GoToZone::Active::_request_booking()
 }
 
 //==============================================================================
-void GoToZone::Active::_clear_manager_subscriptions()
+void GoToZone::Active::_stop_listening()
 {
   _state_sub.reset();
   _request_timer.reset();
+}
+
+//==============================================================================
+void GoToZone::Active::_clear_manager_subscriptions()
+{
+  _stop_listening();
+
+  // Every caller of this has had its answer.
   _has_pending_request = false;
 }
 
@@ -556,7 +564,9 @@ auto GoToZone::Active::interrupt(
       });
   }
 
-  _clear_manager_subscriptions();
+  // Zone manager can still grant while we are not listening,
+  // and a cancel from here has to release that grant.
+  _stop_listening();
 
   _state->update_status(Status::Standby);
   _state->update_log().info("Going into standby for an interruption");

@@ -1,14 +1,15 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.22)
 
 project(rmf_websocket)
 
-if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 17)
-endif()
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   # we dont use add_compile_options with pedantic in message packages
   # because the Python C extensions dont comply with it
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wpedantic")
+endif()
+
+if(POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
 endif()
 
 include(GNUInstallDirs)
@@ -20,10 +21,17 @@ find_package(rclcpp REQUIRED)
 find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator_vendor REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
-find_package(websocketpp REQUIRED)
-find_package(Boost COMPONENTS system REQUIRED)
+find_package(Boost REQUIRED)
 find_package(Threads)
+find_package(backward_ros REQUIRED)
 
+if(TARGET nlohmann_json_schema_validator)
+  set(json_schema_validator_target nlohmann_json_schema_validator)
+else()
+  set(json_schema_validator_target nlohmann_json_schema_validator::validator)
+endif()
+
+add_subdirectory(websocketpp)
 
 add_library(rmf_websocket SHARED
   src/rmf_websocket/client/ClientWebSocketEndpoint.cpp
@@ -34,13 +42,13 @@ add_library(rmf_websocket SHARED
 target_link_libraries(rmf_websocket
   PUBLIC
     ${rclcpp_LIBRARIES}
-    ${websocketpp_LIBRARIES}
     rmf_utils::rmf_utils
     nlohmann_json::nlohmann_json
-    nlohmann_json_schema_validator
+    ${json_schema_validator_target}
   PRIVATE
-    Boost::system
+    ${Boost_LIBRARIES}
     Threads::Threads
+    websocketpp
 )
 
 target_include_directories(rmf_websocket
@@ -48,16 +56,15 @@ target_include_directories(rmf_websocket
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     ${rclcpp_INCLUDE_DIRS}
-    ${WEBSOCKETPP_INCLUDE_DIR}
 )
 
 add_executable(example_client
-  examples/client.cpp)
+  examples/client.cpp
+)
 
 target_link_libraries(example_client
   PUBLIC
   rmf_websocket
-    ${websocketpp_LIBRARIES}
   PRIVATE
     Threads::Threads
 )
@@ -67,12 +74,11 @@ target_include_directories(example_client
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
     ${rclcpp_INCLUDE_DIRS}
-    ${WEBSOCKETPP_INCLUDE_DIR}
 )
 
 
 ament_export_targets(export_rmf_websocket HAS_LIBRARY_TARGET)
-ament_export_dependencies(rmf_traffic rclcpp nlohmann_json websocketpp)
+ament_export_dependencies(rmf_traffic rclcpp nlohmann_json)
 
 #===============================================================================
 install(
@@ -113,8 +119,8 @@ if(BUILD_TESTING)
   target_link_libraries(test_ring_buffer
     PRIVATE
       rmf_utils::rmf_utils
-      Boost::system
-    )
+      ${Boost_LIBRARIES}
+  )
 
 #integration test
   find_package(OpenSSL REQUIRED)
@@ -123,21 +129,20 @@ if(BUILD_TESTING)
     TIMEOUT 300)
   target_link_libraries(test_client
     PUBLIC
-    ${websocketpp_LIBRARIES}
       ${rclcpp_LIBRARIES}
       rmf_utils::rmf_utils
-      Boost::system
+      ${Boost_LIBRARIES}
       rmf_websocket
+      websocketpp
       PRIVATE
       Threads::Threads
       OpenSSL::Crypto
-    )
+  )
   target_include_directories(test_client
     PUBLIC
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
       ${rclcpp_INCLUDE_DIRS}
-      ${WEBSOCKETPP_INCLUDE_DIR}
   )
 
 
@@ -146,11 +151,11 @@ if(BUILD_TESTING)
     TIMEOUT 300)
   target_link_libraries(test_client_no_server
     PUBLIC
-      ${websocketpp_LIBRARIES}
       ${rclcpp_LIBRARIES}
       rmf_utils::rmf_utils
-      Boost::system
+      ${Boost_LIBRARIES}
       rmf_websocket
+      websocketpp
       PRIVATE
       Threads::Threads
       OpenSSL::Crypto
@@ -160,7 +165,6 @@ if(BUILD_TESTING)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
       ${rclcpp_INCLUDE_DIRS}
-      ${WEBSOCKETPP_INCLUDE_DIR}
   )
 
   ament_add_catch2(test_client_with_update_cb
@@ -168,11 +172,11 @@ if(BUILD_TESTING)
     TIMEOUT 300)
   target_link_libraries(test_client_with_update_cb
     PUBLIC
-      ${websocketpp_LIBRARIES}
       ${rclcpp_LIBRARIES}
       rmf_utils::rmf_utils
-      Boost::system
+      ${Boost_LIBRARIES}
       rmf_websocket
+      websocketpp
       PRIVATE
       Threads::Threads
       OpenSSL::Crypto
@@ -182,7 +186,6 @@ if(BUILD_TESTING)
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
       $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
       ${rclcpp_INCLUDE_DIRS}
-      ${WEBSOCKETPP_INCLUDE_DIR}
   )
 endif()
 

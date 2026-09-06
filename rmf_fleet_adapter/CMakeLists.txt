@@ -109,7 +109,7 @@ target_link_libraries(rmf_fleet_adapter
     rmf_websocket::rmf_websocket
     nlohmann_json::nlohmann_json
     rmf_api_msgs::rmf_api_msgs
-    nlohmann_json_schema_validator
+    nlohmann_json_schema_validator::validator
 )
 
 target_include_directories(rmf_fleet_adapter
@@ -120,7 +120,6 @@ target_include_directories(rmf_fleet_adapter
   PRIVATE
     ${rmf_api_msgs_INCLUDE_DIRS}
     ${rmf_websocket_INCLUDE_DIR}
-    ${nlohmann_json_schema_validator_INCLUDE_DIRS}
 )
 
 if (BUILD_TESTING)
@@ -149,7 +148,6 @@ if (BUILD_TESTING)
       # private includes of rmf_fleet_adapter
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/rmf_fleet_adapter>
       ${rmf_api_msgs_INCLUDE_DIRS}
-      ${nlohmann_json_schema_validator_INCLUDE_DIRS}
   )
   target_link_libraries(test_rmf_fleet_adapter
     PUBLIC
@@ -169,7 +167,7 @@ if (BUILD_TESTING)
       rmf_fleet_adapter
       rmf_utils::rmf_utils
       rmf_api_msgs::rmf_api_msgs
-      nlohmann_json_schema_validator
+      nlohmann_json_schema_validator::validator
   )
 
   target_compile_definitions(test_rmf_fleet_adapter

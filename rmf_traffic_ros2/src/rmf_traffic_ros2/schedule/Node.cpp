@@ -90,8 +90,16 @@ std::vector<ScheduleNode::ConflictSet> get_conflicts(
   const auto& participants = viewer.participant_ids();
   for (const auto participant : participants)
   {
-    const auto itinerary = *viewer.get_itinerary(participant);
-    const auto plan_id = *viewer.get_current_plan_id(participant);
+    const auto itinerary_opt = viewer.get_itinerary(participant);
+    if (!itinerary_opt.has_value())
+      continue;
+    const auto itinerary = *itinerary_opt;
+
+    const auto plan_id_opt = viewer.get_current_plan_id(participant);
+    if (!plan_id_opt.has_value())
+      continue;
+    const auto plan_id = *plan_id_opt;
+
     const auto description = viewer.get_participant(participant);
     if (!description)
       continue;
@@ -1031,6 +1039,7 @@ void ScheduleNode::request_changes(
   const RequestChanges::Request::SharedPtr& request,
   const RequestChanges::Response::SharedPtr& response)
 {
+  response->node_id = node_id;
   const auto query = registered_queries.find(request->query_id);
   if (query == registered_queries.end())
   {

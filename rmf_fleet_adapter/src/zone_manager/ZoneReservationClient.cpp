@@ -304,6 +304,32 @@ bool ZoneReservationClient::confirm_handback(
 }
 
 //==============================================================================
+bool ZoneReservationClient::thaw_for(
+  const std::string& zone,
+  const std::string& vertex,
+  const std::string& fleet,
+  const std::string& robot)
+{
+  auto* holding = _find(zone, vertex);
+  if (!holding || holding->state != Holding::State::Frozen)
+    return false;
+
+  // Frozen for somebody else is not ours to undo.
+  if (holding->transferred_to != Holding::RobotId{fleet, robot})
+    return false;
+
+  holding->state = Holding::State::Held;
+  holding->transferred_to = std::nullopt;
+
+  RCLCPP_INFO(
+    _node.get_logger(),
+    "Zone manager thawed [%s], which [%s/%s] is entering the zone to use",
+    vertex.c_str(), fleet.c_str(), robot.c_str());
+
+  return true;
+}
+
+//==============================================================================
 void ZoneReservationClient::_disown(const std::string& vertex)
 {
   const auto it = _holdings.find(vertex);

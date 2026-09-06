@@ -88,6 +88,14 @@ public:
     const std::string& robot,
     HandbackDisposal disposal);
 
+  /// Take a frozen vertex back into the pool for the robot it was frozen
+  /// for, because that robot has come back to use it.
+  bool thaw_for(
+    const std::string& zone,
+    const std::string& vertex,
+    const std::string& fleet,
+    const std::string& robot);
+
   /// Relinquish one vertex. True when a reservation was actually handed
   /// back, false for a vertex we only had a queued claim on.
   bool release(const std::string& zone, const std::string& vertex);

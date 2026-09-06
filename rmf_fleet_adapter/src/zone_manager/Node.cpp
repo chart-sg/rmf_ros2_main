@@ -199,10 +199,9 @@ void Node::_process_arrived(
   if (held->second.arrived)
     return;
 
-  // purpose of this arrived flag is for idle-zone checking, arrived flag true
-  // means robot is parking inside the zone, and it doesn't need other zone waypoints
-  // anymore and we can declare zone idle so zone-sweep can release those free waypoint
-  // back to reservation node
+  // The arrived flag is what the idle check reads. A robot parked inside the
+  // zone wants no other vertex, so the zone counts as idle and the sweep can
+  // give the spares back to the reservation node.
   held->second.arrived = true;
 
   RCLCPP_INFO(this->get_logger(),
@@ -543,6 +542,12 @@ void Node::_finalize_entry(
   // Try to re-acquire all the waypoints in the zone
   _reservation_client->acquire(
     msg->zone_name, _zone_vertex_names(msg->zone_name));
+
+  // An emergency pullover takes the ticket off a robot mid drive and leaves
+  // the vertex frozen. This ENTRY means it is back, and without the thaw the
+  // grant below carries no ticket.
+  _reservation_client->thaw_for(
+    msg->zone_name, held_vertex, msg->fleet_name, msg->robot_name);
 
   const bool no_preference =
     msg->modifiers.group_hint.empty()

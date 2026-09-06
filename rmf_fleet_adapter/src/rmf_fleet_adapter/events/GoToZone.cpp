@@ -515,8 +515,19 @@ void GoToZone::Active::_complete()
   _completed = true;
   _clear_manager_subscriptions();
 
-  if (_finished)
-    _finished();
+  if (!_finished)
+    return;
+
+  // Do not call finished() here. The task deletes this event and the inner
+  // event as soon as it hears that, and we are still inside the inner
+  // event's cancel(). Schedule it so it runs after everything has returned.
+  const auto finished = _finished;
+  _finished = nullptr;
+
+  _context->worker().schedule([finished](const auto&)
+    {
+      finished();
+    });
 }
 
 //==============================================================================

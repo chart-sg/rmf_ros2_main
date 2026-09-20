@@ -231,7 +231,7 @@ ZoneStateResult handle_zone_state(
     }
 
     context->set_zone_booking(
-      zone_name, booking.assigned_waypoint_name, goal);
+      zone_name, booking.assigned_waypoint_name, goal, booking.request_id);
 
     if (booking.has_ticket)
     {
@@ -285,36 +285,37 @@ ZoneStateResult handle_zone_state(
     return result;
   }
 
-  for (const auto& proceed : state.proceed)
+  using Response = rmf_zone_msgs::msg::ZoneResponse;
+  for (const auto& response : state.responses)
   {
-    if (proceed.robot_name != robot_name
-      || proceed.fleet_name != fleet_name
-      || proceed.zone_name != zone_name
-      || proceed.request_id != request_id)
+    if (response.robot_name != robot_name
+      || response.fleet_name != fleet_name
+      || response.zone_name != zone_name
+      || response.request_id != request_id)
       continue;
 
-    RCLCPP_INFO(
-      node->get_logger(),
-      "%s: [%s/%s] may enter zone [%s] without a booking, so it will carry "
-      "on with the plan it already has",
-      caller,
-      context->group().c_str(), context->name().c_str(),
-      zone_name.c_str());
-
-    result.status = ZoneStateResult::Status::Proceed;
-    return result;
-  }
-
-  for (const auto& rejection : state.rejected)
-  {
-    if (rejection.robot_name != robot_name
-      || rejection.fleet_name != fleet_name
-      || rejection.request_id != request_id)
+    // Revocations are handled at the fleet level, since they must reach a
+    // robot that is parked in a zone with no task running.
+    if (response.status == Response::REVOKED)
       continue;
 
-    result.reason = rejection.reason;
+    if (response.status == Response::PROCEED)
+    {
+      RCLCPP_INFO(
+        node->get_logger(),
+        "%s: [%s/%s] may enter zone [%s] without a booking, so it will carry "
+        "on with the plan it already has",
+        caller,
+        context->group().c_str(), context->name().c_str(),
+        zone_name.c_str());
 
-    if (rejection.reason == "unknown_zone")
+      result.status = ZoneStateResult::Status::Proceed;
+      return result;
+    }
+
+    result.reason = response.reason;
+
+    if (response.reason == "unknown_zone")
     {
       RCLCPP_ERROR(
         node->get_logger(),
@@ -325,7 +326,7 @@ ZoneStateResult handle_zone_state(
       return result;
     }
 
-    if (rejection.reason == "zone_has_no_waypoints")
+    if (response.reason == "zone_has_no_waypoints")
     {
       RCLCPP_ERROR(
         node->get_logger(),
@@ -337,7 +338,7 @@ ZoneStateResult handle_zone_state(
       return result;
     }
 
-    if (rejection.reason == "waypoints_not_reserved")
+    if (response.reason == "waypoints_not_reserved")
     {
       RCLCPP_INFO(
         node->get_logger(),
@@ -360,7 +361,7 @@ ZoneStateResult handle_zone_state(
       caller,
       context->group().c_str(), context->name().c_str(),
       zone_name.c_str(),
-      rejection.reason.c_str());
+      response.reason.c_str());
 
     result.status = ZoneStateResult::Status::Deferred;
     return result;

@@ -1050,6 +1050,10 @@ public:
     std::string zone_name;
     std::string waypoint_name;
     rmf_traffic::agv::Plan::Goal goal;
+
+    // The request_id the manager last granted this booking under. A
+    // revocation naming a different one is stale.
+    std::string request_id;
     std::shared_ptr<void> stubbornness;
   };
 
@@ -1060,7 +1064,8 @@ public:
   void set_zone_booking(
     std::string zone_name,
     std::string waypoint_name,
-    rmf_traffic::agv::Plan::Goal goal);
+    rmf_traffic::agv::Plan::Goal goal,
+    std::string request_id);
 
   /// Get the booking held for a zone, or nullptr
   ZoneBookingPtr zone_booking(const std::string& zone_name) const;

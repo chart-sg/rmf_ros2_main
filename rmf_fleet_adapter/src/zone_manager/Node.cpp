@@ -37,10 +37,6 @@ Node::Node(const rclcpp::NodeOptions& options)
   _state_pub = this->create_publisher<rmf_zone_msgs::msg::ZoneState>(
     ZoneStateTopicName, transient_qos);
 
-  _booking_revoked_pub =
-    this->create_publisher<rmf_zone_msgs::msg::ZoneBookingRevoked>(
-      ZoneBookingRevokedTopicName, transient_qos);
-
   _reservation_client = std::make_unique<ZoneReservationClient>(
     *this,
     [this](const std::string& zone) { _on_zone_pool_changed(zone); });
@@ -751,17 +747,22 @@ void Node::_remove_booking(
 
   _reservation_client->release(entry.zone_name, wp_name);
 
-  auto revoked = rmf_zone_msgs::msg::ZoneBookingRevoked();
-  revoked.stamp = this->now();
-  revoked.robot_name = entry.robot_name;
-  revoked.fleet_name = entry.fleet_name;
-  revoked.zone_name = entry.zone_name;
-  revoked.assigned_waypoint_name = wp_name;
-  revoked.reason = reason;
-  _booking_revoked_pub->publish(revoked);
+  // The request_id is the booking's, not a request's, so a robot can tell
+  // this apart from a revocation of a booking it no longer holds.
+  auto response = rmf_zone_msgs::msg::ZoneResponse();
+  response.stamp = this->now();
+  response.robot_name = entry.robot_name;
+  response.fleet_name = entry.fleet_name;
+  response.request_id = entry.request_id;
+  response.zone_name = entry.zone_name;
+  response.status = rmf_zone_msgs::msg::ZoneResponse::REVOKED;
+  response.assigned_waypoint_name = wp_name;
+  response.reason = reason;
 
+  // Announce the revocation before retrying, or a retry could grant this
+  // vertex to another robot in a publish that reaches the fleet first.
+  _publish_state_with_response(std::move(response));
   _retry_pending_entries(entry.zone_name);
-  _publish_state();
 }
 
 //==============================================================================
@@ -813,22 +814,30 @@ void Node::_publish_state()
 }
 
 //==============================================================================
+void Node::_publish_state_with_response(
+  rmf_zone_msgs::msg::ZoneResponse response)
+{
+  auto state = _build_state_msg();
+  state.responses.push_back(std::move(response));
+  _state_pub->publish(state);
+}
+
+//==============================================================================
 void Node::_publish_state_with_proceed(
   const std::string& robot_name,
   const std::string& fleet_name,
   const std::string& request_id,
   const std::string& zone_name)
 {
-  auto state = _build_state_msg();
+  auto response = rmf_zone_msgs::msg::ZoneResponse();
+  response.stamp = this->now();
+  response.robot_name = robot_name;
+  response.fleet_name = fleet_name;
+  response.request_id = request_id;
+  response.zone_name = zone_name;
+  response.status = rmf_zone_msgs::msg::ZoneResponse::PROCEED;
 
-  auto proceed = rmf_zone_msgs::msg::ZoneProceed();
-  proceed.robot_name = robot_name;
-  proceed.fleet_name = fleet_name;
-  proceed.request_id = request_id;
-  proceed.zone_name = zone_name;
-  state.proceed.push_back(std::move(proceed));
-
-  _state_pub->publish(state);
+  _publish_state_with_response(std::move(response));
 }
 
 //==============================================================================
@@ -839,17 +848,16 @@ void Node::_publish_state_with_rejection(
   const std::string& zone_name,
   const std::string& reason)
 {
-  auto state = _build_state_msg();
+  auto response = rmf_zone_msgs::msg::ZoneResponse();
+  response.stamp = this->now();
+  response.robot_name = robot_name;
+  response.fleet_name = fleet_name;
+  response.request_id = request_id;
+  response.zone_name = zone_name;
+  response.status = rmf_zone_msgs::msg::ZoneResponse::REJECTED;
+  response.reason = reason;
 
-  auto rejection = rmf_zone_msgs::msg::ZoneRejection();
-  rejection.robot_name = robot_name;
-  rejection.fleet_name = fleet_name;
-  rejection.request_id = request_id;
-  rejection.zone_name = zone_name;
-  rejection.reason = reason;
-  state.rejected.push_back(std::move(rejection));
-
-  _state_pub->publish(state);
+  _publish_state_with_response(std::move(response));
 }
 
 //==============================================================================

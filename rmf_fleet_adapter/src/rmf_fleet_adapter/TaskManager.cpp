@@ -689,8 +689,8 @@ void TaskManager::ActiveTask::cancel(
   if (_cancellation.has_value())
     return;
 
-  // If the task is currently interrupted, clear the interruption without
-  // firing the resume callback.
+  // Resume an interrupted task before cancelling it. rmf_task_sequence will
+  // not move past an interrupted phase, so the cancellation would never run.
   if (_resume_task.has_value())
   {
     nlohmann::json resume_json;
@@ -708,6 +708,8 @@ void TaskManager::ActiveTask::cancel(
     std::lock_guard<std::mutex> lock(_interruption_handler->mutex);
     _interruption_handler->is_interrupted = false;
     _interruption_handler->interruption_listeners.clear();
+
+    (*_resume_task)();
     _resume_task = std::nullopt;
   }
 

@@ -3138,13 +3138,13 @@ void TaskManager::_handle_resume_request(
 
     bool new_task_queued = false;
     nlohmann::json response;
-    static const auto response_validator = 
+    static const auto response_validator =
       _make_validator(rmf_api_msgs::schemas::robot_task_response);
 
     const auto new_task_it = request_json.find("new_task");
     if (new_task_it != request_json.end())
     {
-      // Convert and enqueue the replacement first. If the conversion fails, 
+      // Convert and enqueue the replacement first. If the conversion fails,
       // nothing is queued and the active task remains interrupted.
       response = submit_direct_request(
         request_json["new_task"], request_id);
@@ -3153,8 +3153,8 @@ void TaskManager::_handle_resume_request(
       {
         RCLCPP_ERROR(
           _context->node()->get_logger(),
-          "Resume request [%s] contained an invalid replacement task. Task [%s] "
-          "of robot [%s] remains interrupted.",
+          "Resume request [%s] contained an invalid replacement task. Task "
+          "[%s] of robot [%s] remains interrupted.",
           request_id.c_str(),
           _active_task.id().c_str(),
           _context->requester_id().c_str());
@@ -3172,19 +3172,28 @@ void TaskManager::_handle_resume_request(
 
     if (new_task_queued)
     {
-      RCLCPP_INFO(
-        _context->node()->get_logger(),
-        "Cancelling interrupted task [%s] of robot [%s] and rerouting it to "
-        "replacement task [%s]",
-        _active_task.id().c_str(),
-        _context->requester_id().c_str(),
-        request_id.c_str());
+      if (unknown_tokens.empty())
+      {
+        RCLCPP_INFO(
+          _context->node()->get_logger(),
+          "Cancelling interrupted task [%s] of robot [%s] and rerouting it to "
+          "replacement task [%s]",
+          _active_task.id().c_str(),
+          _context->requester_id().c_str(),
+          request_id.c_str());
 
-      auto cancel_labels = get_labels(request_json);
-      cancel_labels.push_back("replaced_by=" + request_id);
-      _active_task.cancel(std::move(cancel_labels), _context->now());
+        auto cancel_labels = get_labels(request_json);
+        cancel_labels.push_back("replaced_by=" + request_id);
+        _active_task.cancel(std::move(cancel_labels), _context->now());
 
-      return _validate_and_publish_api_response(response, response_validator, request_id);
+        return _validate_and_publish_api_response(
+          response, response_validator, request_id);
+      }
+      else
+      {
+        std::lock_guard<std::recursive_mutex> lock(_mutex);
+        _cancel_task_from_direct_queue(request_id, {"invalid_resume_tokens"});
+      }
     }
 
     if (unknown_tokens.empty())

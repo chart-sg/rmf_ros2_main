@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>rmf_lift_manager</name>
+  <version>2.14.0</version>
+  <description>Lift manager: forwards fleet adapter lift requests to lifts and keeps lifts in line with them. Replaces lift_supervisor.</description>
+  <maintainer email="leong_teck_tey@cgh.com.sg">Leong Teck Tey</maintainer>
+  <license>Apache License 2.0</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>rmf_lift_msgs</exec_depend>
+
+  <test_depend>ament_copyright</test_depend>
+  <test_depend>ament_flake8</test_depend>
+  <test_depend>ament_pep257</test_depend>
+  <test_depend>python3-pytest</test_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
